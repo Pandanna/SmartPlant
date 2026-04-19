@@ -8,11 +8,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-COPY requirements.txt .
+# Puntiamo alla sottocartella SmartPlantManager presente nel repository
+COPY SmartPlantManager/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copia il resto del codice
-COPY . .
+# Copia il contenuto della cartella SmartPlantManager nella directory di lavoro /app
+COPY SmartPlantManager/ .
 
 # Raccoglie i file statici
 # Usiamo una chiave dummy e debug per la build

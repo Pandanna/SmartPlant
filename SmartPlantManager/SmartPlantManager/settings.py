@@ -140,13 +140,9 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 # Variabili IoT
 AWS_IOT_ENDPOINT = config('AWS_IOT_ENDPOINT', default='')
-AWS_IOT_PORT     = config('AWS_IOT_PORT',     default=8883, cast=int)
-PLANTID_API_KEY  = config('PLANTID_API_KEY',  default='')
+AWS_IOT_PORT = config('AWS_IOT_PORT', default=8883, cast=int)
+PLANTID_API_KEY = config('PLANTID_API_KEY', default='')
 PERENUAL_API_KEY = config('PERENUAL_API_KEY', default='')
-TELEGRAM_TOKEN   = config('TELEGRAM_TOKEN',   default='')
-INFLUXDB_URL     = config('INFLUXDB_URL',     default='')
-INFLUXDB_TOKEN   = config('INFLUXDB_TOKEN',   default='')
-INFLUXDB_ORG     = config('INFLUXDB_ORG',     default='')
-INFLUXDB_BUCKET  = config('INFLUXDB_BUCKET',  default='')
+TELEGRAM_TOKEN = config('TELEGRAM_TOKEN', default='')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
