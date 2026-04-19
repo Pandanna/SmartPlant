@@ -81,21 +81,24 @@ DATABASE_URL = config('DATABASE_URL', default=None)
 
 if DATABASE_URL:
     try:
-        # Supportiamo sia postgres:// che postgresql://
+        # Supportiamo sia postgres:// che postgresql:// e porta opzionale
         _db = re.match(
-            r'postgres(?:ql)?://(?P<user>[^:]+):(?P<password>[^@]+)@(?P<host>[^:]+):(?P<port>\d+)/(?P<name>.+)',
+            r'postgres(?:ql)?://(?P<user>[^:]+):(?P<password>[^@]+)@(?P<host>[^/:]+)(?::(?P<port>\d+))?/(?P<name>[^?]+)',
             DATABASE_URL
         )
-        DATABASES = {
-            'default': {
-                'ENGINE':   'django.db.backends.postgresql',
-                'NAME':     _db.group('name'),
-                'USER':     _db.group('user'),
-                'PASSWORD': _db.group('password'),
-                'HOST':     _db.group('host'),
-                'PORT':     _db.group('port'),
+        if _db:
+            DATABASES = {
+                'default': {
+                    'ENGINE':   'django.db.backends.postgresql',
+                    'NAME':     _db.group('name').split('?')[0], # Pulisce eventuali parametri extra
+                    'USER':     _db.group('user'),
+                    'PASSWORD': _db.group('password'),
+                    'HOST':     _db.group('host'),
+                    'PORT':     _db.group('port') or '5432',
+                }
             }
-        }
+        else:
+            DATABASE_URL = None
     except Exception:
         DATABASE_URL = None
 
