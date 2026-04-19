@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %} — Dettaglio {{ pianta.nickname }}{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/dettaglio.css' %}">
+{% endblock %}
+
+{% block js_config %}
+     data-device-id="{{ pianta.dispositivo.device_id }}"
+     data-url-soglie="{% url 'soglie' %}"
+     data-url-irrigazione="{% url 'irrigazione' %}"
+     data-url-elimina="{% url 'elimina' %}"
+     data-url-aggiorna="{% url 'aggiorna_profilo' %}"
+{% endblock %}
+
+{% block content %}
+<div class="fade-up" style="max-width: 900px; margin: 0 auto; padding: 1.5rem;">
+  
+  <a href="{% url 'home' %}" class="btn btn-ghost btn-sm btn-back">← Torna alla Dashboard</a>
+
+  <div class="card card-p detail-header">
+    {% if pianta.image %}
+      <img id="det-img" src="data:image/jpeg;base64,{{ pianta.image }}" alt="Pianta">
+    {% else %}
+      <img id="det-img" src="https://images.unsplash.com/photo-1511489733334-b7c2d98e9af8?w=600&h=400&fit=crop&auto=format" alt="Pianta">
+    {% endif %}
+    
+    <div style="flex: 1; min-width: 180px;">
+      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <span id="det-name" style="font-family: var(--serif); font-size: 1.4rem;">{{ pianta.nickname }}</span>
+        <div id="det-health-ring" class="health-ring-small">
+          <span class="val">—</span><span class="pct">%</span>
+        </div>
+      </div>
+      <div id="det-species" style="font-style: italic; color: var(--muted); font-size: 12px; margin-top: 2px;">{{ pianta.species|default:pianta.common_name }}</div>
+      <div style="display: flex; gap: 12px; margin-top: 7px; flex-wrap: wrap;">
+        <span style="display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted);">
+          <div id="det-online-dot" class="dot"></div><span>{{ pianta.dispositivo.device_id }}</span>
+        </span>
+        <span id="det-online-text" style="font-size: 12px;">—</span>
+      </div>
+    </div>
+    <div style="display: flex; gap: 7px; flex-shrink: 0;">
+      <button class="btn btn-danger btn-sm" onclick="openDeleteModal()">Elimina</button>
+    </div>
+  </div>
+
+  <div class="tab-bar" style="margin-bottom: 1rem;">
+    <button class="tab active" data-tab="sensori">Sensori</button>
+    <button class="tab" data-tab="irrigazione">Irrigazione</button>
+    <button class="tab" data-tab="impostazioni">Soglie & Impostazioni</button>
+    <button class="tab" data-tab="profilo">Profilo Pianta</button>
+  </div>
+
+  <div id="tab-content-container">
+    <div style="padding: 2rem; text-align: center; color: var(--muted); font-size: 13px;">Caricamento dati sensori...</div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="{% static 'js/dettaglio.js' %}"></script>
+{% endblock %}

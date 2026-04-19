@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %} — Il mio Profilo{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/accounts.css' %}">
+  <link rel="stylesheet" href="{% static 'css/profile.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+  <div class="fade-up card profile-card">
+    
+    <div class="profile-header">
+      <div class="avatar-large">
+        {{ request.user.username|make_list|first|upper }}
+      </div>
+      <h2 class="profile-title">Il mio account</h2>
+      <p class="profile-username">{{ request.user.username }}</p>
+    </div>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="msg-{{ message.tags }}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <form method="post" class="profile-form">
+      {% csrf_token %}
+      
+      <div class="field-group">
+        <label for="{{ form.email.id_for_label }}">Email</label>
+        {{ form.email }}
+        {% if form.email.errors %}<div class="field-err">{{ form.email.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div class="field-group">
+        <label for="{{ form.telegram.id_for_label }}">Username Telegram</label>
+        {{ form.telegram }}
+        <div class="hint">Usato per inviare allarmi in tempo reale</div>
+        {% if form.telegram.errors %}<div class="field-err">{{ form.telegram.errors.0 }}</div>{% endif %}
+      </div>
+
+      <button type="submit" class="btn btn-primary submit-btn">Salva modifiche</button>
+      
+      <div class="divider"></div>
+      
+      <div style="text-align: center;">
+        <a href="{% url 'home' %}" class="text-green" style="font-size: 13px; text-decoration: none; font-weight: 500;">
+          ← Torna alla Dashboard
+        </a>
+      </div>
+    </form>
+    
+  </div>
+</div>
+{% endblock %}

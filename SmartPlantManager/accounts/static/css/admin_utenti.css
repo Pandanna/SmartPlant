@@ -1,0 +1,74 @@
+.admin-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.admin-header {
+  margin-bottom: 20px;
+}
+
+.admin-title {
+  font-family: var(--serif);
+  font-size: 1.25rem;
+  margin-bottom: 4px;
+}
+
+.admin-subtitle {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/*  Stile Tabella */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.data-table th {
+  text-align: left;
+  padding: 0.8rem 1rem;
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  background: var(--card2);
+}
+
+.data-table td {
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.data-table tr:last-child td {
+  border-bottom: none;
+}
+
+.data-table tbody tr:hover td {
+  background: var(--card2);
+}
+
+/* Messaggi di feedback Django */
+.msg-success {
+  background: var(--green-d);
+  border: 1px solid var(--green-b);
+  color: var(--green);
+  padding: 0.75rem 1rem;
+  border-radius: var(--r-md);
+  font-size: 13px;
+  margin-bottom: 1rem;
+}
+
+.msg-error {
+  background: var(--red-d);
+  border: 1px solid var(--red-b);
+  color: var(--red);
+  padding: 0.75rem 1rem;
+  border-radius: var(--r-md);
+  font-size: 13px;
+  margin-bottom: 1rem;
+}

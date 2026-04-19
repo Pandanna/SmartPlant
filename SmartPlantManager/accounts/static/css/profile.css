@@ -1,0 +1,55 @@
+.profile-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 24px;
+  text-align: center;
+}
+
+.profile-header {
+  margin-bottom: 24px;
+}
+
+.avatar-large {
+  width: 64px;
+  height: 64px;
+  background: var(--green);
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0 auto 12px;
+}
+
+.profile-title {
+  font-family: var(--serif);
+  font-size: 22px;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.profile-username {
+  font-size: 15px;
+  color: var(--muted);
+  margin-bottom: 0;
+}
+
+.profile-form {
+  text-align: left;
+}
+
+.submit-btn {
+  margin-top: 8px;
+}
+
+.msg-success {
+  background: var(--green-d);
+  color: var(--green);
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--green-b);
+}

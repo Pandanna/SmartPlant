@@ -1,0 +1,65 @@
+services:
+
+  django:
+    build:
+      context: ./SmartPlantManager
+      dockerfile: Dockerfile
+    container_name: mydjango
+    ports:
+      - "8000:8000"
+    environment:
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS}
+      - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
+      - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      - AWS_IOT_ENDPOINT=${AWS_IOT_ENDPOINT}
+      - AWS_IOT_PORT=${AWS_IOT_PORT}
+      - INFLUXDB_URL=${INFLUXDB_URL}
+      - INFLUXDB_TOKEN=${INFLUXDB_TOKEN}
+      - INFLUXDB_ORG=${INFLUXDB_ORG}
+      - INFLUXDB_BUCKET=${INFLUXDB_BUCKET}
+      - PLANTID_API_KEY=${PLANTID_API_KEY}
+    volumes:
+      - ./SmartPlantManager:/app
+      - ./certs:/certs
+      - static_volume:/app/staticfiles
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - smartplant_net
+
+  db:
+    image: postgres:16-alpine
+    container_name: mypostgres
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - smartplant_net
+
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: mytunnel
+    command: tunnel --url http://django:8000
+    restart: unless-stopped
+    networks:
+      - smartplant_net
+
+volumes:
+  postgres_data:
+  static_volume:
+
+networks:
+  smartplant_net:
+    driver: bridge

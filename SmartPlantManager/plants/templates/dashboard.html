@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %} — Dashboard{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="fade-up" style="max-width: 960px; margin: 0 auto; padding: 1.5rem;">
+  
+  <div class="dash-header">
+    <div>
+      <div class="dash-title">Bentornato, <em>{{ request.user.username }}</em></div>
+      <div class="dash-subtitle" id="current-date">Caricamento data...</div>
+    </div>
+    <a href="{% url 'registra' %}" class="btn btn-primary">+ Nuova pianta</a>
+  </div>
+
+  <div class="stat-grid">
+    <button class="stat-card active" data-filter="all" style="--c: var(--text);">
+      <div class="stat-val" id="stat-all">0</div>
+      <div class="stat-label">Totali</div>
+    </button>
+    <button class="stat-card" data-filter="healthy" style="--c: var(--green);">
+      <div class="stat-val" id="stat-healthy">0</div>
+      <div class="stat-label">In salute</div>
+    </button>
+    <button class="stat-card" data-filter="water" style="--c: var(--amber);">
+      <div class="stat-val" id="stat-water">0</div>
+      <div class="stat-label">Da irrigare</div>
+    </button>
+    <button class="stat-card" data-filter="alarm" style="--c: var(--red);">
+      <div class="stat-val" id="stat-alarm">0</div>
+      <div class="stat-label">In allarme</div>
+    </button>
+    <button class="stat-card" data-filter="offline" style="--c: var(--muted);">
+      <div class="stat-val" id="stat-offline">0</div>
+      <div class="stat-label">Offline</div>
+    </button>
+  </div>
+
+  <div class="search-bar">
+    <input type="text" id="search-input" placeholder="Cerca per nome o specie..." style="max-width: 260px;">
+    <div id="filter-status" style="display: none; align-items: center; gap: 8px;">
+      <span style="font-size: 13px; color: var(--muted);"><span id="filter-name">Filtro</span> · <strong style="color: var(--text);" id="filter-count">0 piante</strong></span>
+      <button class="btn btn-ghost btn-sm" id="btn-clear-filter" style="border: 1px solid var(--border); border-radius: 6px; font-size: 12px;">✕</button>
+    </div>
+  </div>
+
+  <div id="plants-grid" class="plants-grid">
+    </div>
+
+  <div id="empty-state" style="display: none; text-align: center; padding: 3rem; color: var(--muted);">
+    <div style="font-size: 2.5rem; margin-bottom: 10px;">🌱</div>
+    <div style="font-size: 13px; font-weight: 500; margin-bottom: 6px;">Nessuna pianta registrata</div>
+    <a href="{% url 'registra' %}" class="btn btn-outline" style="margin-top: 12px;">Aggiungi la prima pianta</a>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'js/dashboard.js' %}"></script>
+{% endblock %}

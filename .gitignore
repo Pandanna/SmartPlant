@@ -1,0 +1,41 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Django stuff
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+staticfiles/
+media/
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Node.js
+node_modules/
+
+# PlatformIO
+.pio/
+.pioenvs/
+.piolibdeps/
+.clang_complete
+.gcc-flags.json
+.vscode/
+
+# Project specific secrets
+certs/*
+ESP32Code/lib/utils/secrets.h
+
+# OS generated files
+.DS_Store
+Thumbs.db
+*.log
+
+ESP32Code/*
+SmartPlant.jsx

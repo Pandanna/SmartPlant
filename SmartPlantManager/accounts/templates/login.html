@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %} — Accesso{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/accounts.css' %}">
+  <link rel="stylesheet" href="{% static 'css/login.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+  <div class="fade-up card login-card">
+    
+    <div class="login-header">
+      <div class="logo-title">Smart <em>Plant</em></div>
+      <div class="logo-subtitle">Accedi al pannello di controllo</div>
+    </div>
+    
+    <form method="post" class="login-form">
+      {% csrf_token %}
+      
+      <div>
+        <label for="id_username">Username</label>
+        <input type="text" name="username" id="id_username" placeholder="Il tuo username" autocomplete="username" autofocus required>
+      </div>
+      
+      <div>
+        <label for="id_password">Password</label>
+        <input type="password" name="password" id="id_password" placeholder="Password" autocomplete="current-password" required>
+      </div>
+      
+      {% if form.errors %}
+        <div class="error-box">
+          {% for error in form.non_field_errors %}
+            {{ error }}<br>
+          {% endfor %}
+          {% for field in form %}
+            {% for error in field.errors %}
+              {{ error }}<br>
+            {% endfor %}
+          {% endfor %}
+        </div>
+      {% endif %}
+      
+      <button type="submit" class="btn btn-primary submit-btn">Accedi</button>
+      
+      <div class="login-links">
+        <a href="#" class="btn btn-ghost btn-sm text-muted">Password dimenticata?</a>
+        <a href="{% url 'register' %}" class="btn btn-ghost btn-sm text-green">Crea account</a>
+      </div>
+    </form>
+    
+  </div>
+</div>
+{% endblock %}

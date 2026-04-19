@@ -1,0 +1,64 @@
+/*  Stili specifici per Registrazione  */
+
+.register-card {
+  width: 100%;
+  max-width: 440px; 
+  padding: 2rem 1.75rem;
+}
+
+.back-btn {
+  color: var(--muted);
+  padding: 0;
+  margin-bottom: 16px;
+  text-decoration: none;
+}
+
+.register-header {
+  margin-bottom: 20px;
+}
+
+.register-header .title {
+  font-family: var(--serif);
+  font-size: 1.25rem;
+  margin-bottom: 4px;
+}
+
+.register-header .subtitle {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.inline-btn {
+  padding: 0;
+  margin-left: 4px;
+}
+
+/*  Animazione barra della password  */
+.strength-container {
+  margin-top: 6px;
+}
+
+.strength-bars {
+  display: flex;
+  gap: 3px;
+  margin-bottom: 3px;
+}
+
+.strength-bar {
+  height: 3px;
+  flex: 1;
+  border-radius: 2px;
+  background: var(--border);
+  transition: background 0.2s ease;
+}
+
+.strength-label {
+  font-size: 11px;
+}

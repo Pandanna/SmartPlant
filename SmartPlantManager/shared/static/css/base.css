@@ -1,0 +1,59 @@
+/*  Variabili globali  */
+:root {
+  --bg:       #f6f4ef;
+  --card:     #ffffff;
+  --card2:    #faf9f7;
+  --surface:  #eeebe4;
+  --border:   #e0dbd0;
+  --border2:  #ccc7ba;
+  --text:     #1c2b20;
+  --muted:    #7a8478;
+  --hint:     #a9b0a5;
+
+  --green:    #2a6340;
+  --green-l:  #3d7d54;
+  --green-d:  rgba(42,99,64,.1);
+  --green-b:  rgba(42,99,64,.25);
+
+  --amber:    #a05f0a;
+  --amber-d:  rgba(160,95,10,.1);
+  --amber-b:  rgba(160,95,10,.25);
+
+  --red:      #9b2424;
+  --red-d:    rgba(155,36,36,.1);
+  --red-b:    rgba(155,36,36,.25);
+
+  --blue:     #1a4f8a;
+  --blue-d:   rgba(26,79,138,.1);
+  --blue-b:   rgba(26,79,138,.25);
+
+  --serif:    'Fraunces', Georgia, serif;
+  --sans:     'DM Sans', system-ui, sans-serif;
+  --mono:     'JetBrains Mono', monospace;
+
+  --r-sm:     6px;
+  --r-md:     10px;
+  --r-lg:     14px;
+  --r-xl:     20px;
+}
+
+/*  Reset  */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/*  Base  */
+body {
+  font-family: var(--sans);
+  background:  var(--bg);
+  color:       var(--text);
+  min-height:  100vh;
+}
+
+/*  Animazioni  */
+@keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.45;transform:scale(.8)} }
+@keyframes alarm-glow { 0%,100%{box-shadow:0 0 0 0 rgba(155,36,36,0)} 55%{box-shadow:0 0 0 4px rgba(155,36,36,.15)} }
+@keyframes fade-up { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+@keyframes progress-fill { from{width:0} to{width:100%} }
+
+.fade-up    { animation: fade-up .2s ease both; }
+.pulse-dot  { animation: pulse-dot 2s ease-in-out infinite; }
+.alarm-card { animation: alarm-glow 1.8s ease-in-out infinite; }

@@ -1,0 +1,77 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Plant{% block title %}{% endblock %}</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="{% static 'css/base.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components.css' %}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+  {% if request.user.is_authenticated and request.resolver_match.url_name not in 'login,register,forgot' %}
+  <header style="
+    background: var(--card); border-bottom: 1px solid var(--border);
+    padding: .8rem 1.5rem; display: flex; align-items: center;
+    justify-content: space-between; position: sticky; top: 0; z-index: 10;
+  ">
+    <div style="display: flex; align-items: center; gap: 1.5rem;">
+      <a href="{% url 'home' %}" style="
+        background: none; border: none; cursor: pointer; padding: 0;
+        font-family: var(--serif); font-size: 1.1rem; color: var(--green);
+        text-decoration: none;
+      ">Smart <em>Plant</em></a>
+      
+      <nav style="display: flex; gap: 2px;">
+        <a href="{% url 'home' %}" class="nav-btn {% if request.resolver_match.url_name == 'home' %}active{% endif %}">Dashboard</a>
+        {% if request.user.is_staff or request.user.is_admin %}
+          <a href="{% url 'admin_utenti' %}" class="nav-btn {% if 'admin' in request.resolver_match.url_name %}active{% endif %}">Admin</a>
+        {% endif %}
+      </nav>
+    </div>
+    
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <a href="{% url 'profile' %}" style="
+        display: flex; align-items: center; gap: 7px; padding: 4px 10px 4px 4px;
+        background: var(--surface); border: 1px solid var(--border);
+        border-radius: 20px; cursor: pointer; transition: all .15s; text-decoration: none;
+      ">
+        <div style="
+          width: 24px; height: 24px; border-radius: 50%; background: var(--green);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 9px; font-weight: 600; color: #fff; letter-spacing: .02em; flex-shrink: 0;
+        ">
+          {{ request.user.username|make_list|first|upper }}
+        </div>
+        <span style="font-size: 13px; font-weight: 500; color: var(--text);">{{ request.user.username }}</span>
+        {% if request.user.is_staff or request.user.is_admin %}
+          <span class="badge badge-amber" style="font-size: 9px; padding: 1px 5px;">Admin</span>
+        {% endif %}
+      </a>
+      
+      <form method="post" action="{% url 'logout' %}" style="margin: 0;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline btn-sm">Esci</button>
+      </form>
+    </div>
+  </header>
+  {% endif %}
+
+  {% block body %}{% endblock %}
+  {% block content %}{% endblock %}
+
+  <div id="js-config" style="display:none"
+       data-csrf="{{ csrf_token }}"
+       data-url-home-data="{% url 'home_data' %}"
+       {% block js_config %}{% endblock %}>
+  </div>
+
+  <script src="{% static 'js/plant_utils.js' %}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

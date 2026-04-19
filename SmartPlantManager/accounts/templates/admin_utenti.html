@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %} — Pannello Admin{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/admin_utenti.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="admin-container fade-up">
+  
+  <div class="admin-header" style="display: flex; justify-content: space-between; align-items: center;">
+    <div>
+      <div class="admin-title">Pannello admin</div>
+      <div class="admin-subtitle">
+        Gestione degli utenti registrati e dei permessi.
+      </div>
+    </div>
+    <a href="{% url 'admin_webhook' %}" class="btn btn-outline btn-sm" style="display: flex; align-items: center; gap: 6px;">
+      <span>⚡</span> Configura Webhook Telegram
+    </a>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="msg-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="card" style="overflow: hidden;">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Utente</th>
+          <th>Email</th>
+          <th>Ruolo</th>
+          <th style="text-align: center;">Piante</th>
+          <th>Registrato</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in utenti %}
+        <tr>
+          
+          <td>
+            <div style="font-weight: 500; font-size: 13px;">
+              {{ u.username }} 
+              {% if u.username == request.user.username %}
+                <span style="font-weight: 400; color: var(--muted);">(tu)</span>
+              {% endif %}
+            </div>
+            <div style="font-size: 11px; margin-top: 2px; color: {% if u.telegram %}var(--hint){% else %}var(--amber){% endif %};">
+              {% if u.telegram %}{{ u.telegram }}{% else %}Telegram non configurato{% endif %}
+            </div>
+          </td>
+          
+          <td style="font-family: var(--mono); font-size: 12px; color: var(--muted);">
+            {{ u.email }}
+          </td>
+          
+          <td>
+            <span class="badge {% if u.is_admin %}badge-amber{% else %}badge-green{% endif %}">
+              {% if u.is_admin %}Admin{% else %}Utente{% endif %}
+            </span>
+          </td>
+          
+          <td style="text-align: center; font-family: var(--mono); font-size: 13px; color: var(--muted);">
+            {{ u.pianta_set.count }}
+          </td>
+          
+          <td style="font-size: 12px; color: var(--muted);">
+            {{ u.created_at|date:"d/m/Y" }}
+          </td>
+          
+          <td>
+            {% if u.username != request.user.username %}
+            <div style="display: flex; gap: 6px; justify-content: flex-end;">
+              <form method="post" action="{% url 'admin_elimina_utente' %}" style="margin: 0;" onsubmit="return confirm('Sei sicuro di voler eliminare {{ u.username }} e tutte le sue piante? L\'operazione è irreversibile.');">
+                {% csrf_token %}
+                <input type="hidden" name="username" value="{{ u.username }}">
+                <button type="submit" class="btn btn-danger btn-sm" style="font-size: 11px; padding: 4px 8px;">Elimina</button>
+              </form>
+
+            </div>
+            {% endif %}
+          </td>
+
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
