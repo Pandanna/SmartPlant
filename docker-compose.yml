@@ -3,7 +3,7 @@ services:
   django:
     build:
       context: .
-      dockerfile: SmartPlantManager/Dockerfile
+      dockerfile: Dockerfile
     container_name: mydjango
     ports:
       - "8000:8000"
