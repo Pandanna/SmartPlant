@@ -219,11 +219,15 @@ def registra_analizza(request):
         result = manual
     else:
         if not image:
-            return JsonResponse({'error': 'Nessuna immagine'}, status=400)
+            return JsonResponse({'error': 'Nessuna immagine fornita.'}, status=400)
         try:
             result = plantid_identify(image)
         except ValueError as e:
             return JsonResponse({'error': str(e)}, status=422)
+        except Exception as e:
+            import traceback
+            print(traceback.format_exc())
+            return JsonResponse({'error': 'Si è verificato un errore interno nel server. Riprova più tardi.'}, status=500)
 
     params = result['params']
     pianta = Pianta.objects.create(

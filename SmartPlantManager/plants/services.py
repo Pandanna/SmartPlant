@@ -245,31 +245,72 @@ def plantid_identify(image_base64: str) -> dict:
         image_base64 = image_base64.split(',', 1)[1]
 
     api_key = settings.PLANTID_API_KEY
+    if not api_key:
+        logger.error("PLANTID_API_KEY non configurata nei settings.")
+        raise ValueError("Servizio di identificazione non configurato (API Key mancante).")
+
     url = 'https://plant.id/api/v3/identification?details=common_names,watering,best_light_condition'
-    resp = requests.post(url, headers={'Api-Key': api_key}, json={'images': [image_base64]}, timeout=30)
-
-    if resp.status_code not in (200, 201): 
-        raise ValueError(f"Plant.id errore {resp.status_code}")
     
-    data = resp.json()
+    try:
+        resp = requests.post(
+            url, 
+            headers={'Api-Key': api_key}, 
+            json={'images': [image_base64]}, 
+            timeout=30
+        )
+    except requests.exceptions.Timeout:
+        logger.error("Timeout durante la chiamata a Plant.id")
+        raise ValueError("Il servizio di identificazione ha impiegato troppo tempo a rispondere. Prova con un'immagine più leggera.")
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Errore di rete durante la chiamata a Plant.id: {e}")
+        raise ValueError("Impossibile connettersi al servizio di identificazione. Controlla la tua connessione.")
+
+    if resp.status_code == 401 or resp.status_code == 403:
+        logger.error(f"Errore autenticazione Plant.id: {resp.status_code} - {resp.text}")
+        raise ValueError("Errore di configurazione del servizio (API Key non valida).")
+    elif resp.status_code == 429:
+        logger.warning("Limite di richieste raggiunto per Plant.id")
+        raise ValueError("Limite di richieste giornaliere raggiunto per il servizio gratuito.")
+    elif resp.status_code not in (200, 201):
+        logger.error(f"Plant.id errore {resp.status_code}: {resp.text}")
+        raise ValueError(f"Il servizio di identificazione ha restituito un errore tecnico ({resp.status_code}).")
+    
+    try:
+        data = resp.json()
+    except Exception as e:
+        logger.error(f"Errore nel parsing JSON della risposta Plant.id: {e}")
+        raise ValueError("Risposta non valida dal servizio di identificazione.")
+
     result = data.get('result', {})
+    if not result:
+        logger.error(f"Risposta Plant.id senza campo 'result': {data}")
+        raise ValueError("Dati non trovati nella risposta del servizio.")
 
-    if result.get('is_plant', {}).get('binary') is False: 
-        raise ValueError("Immagine non valida.")
+    # Controllo se è effettivamente una pianta
+    is_plant_data = result.get('is_plant', {})
+    if is_plant_data.get('binary') is False: 
+        raise ValueError("L'immagine fornita non sembra contenere una pianta. Prova a scattare una foto più chiara.")
     
-    suggestions = result.get('classification', {}).get('suggestions', [])
+    classification = result.get('classification', {})
+    suggestions = classification.get('suggestions', [])
 
     if not suggestions: 
-        raise ValueError("Pianta non riconosciuta.")
+        raise ValueError("Pianta non riconosciuta. Prova con un'altra angolazione o una foto più ravvicinata.")
     
     best = suggestions[0]
+    # Se la confidenza è troppo bassa (sotto il 15%) consideriamola non riconosciuta
+    if best.get('probability', 0) < 0.15:
+        raise ValueError("La qualità della foto è troppo bassa per un riconoscimento certo. Prova a scattare una foto più nitida.")
+
     confidence = round(best['probability'] * 100)
     species = best['name']
     details = best.get('details', {})
-    common_name = details.get('common_names', [species])[0]
+    common_names = details.get('common_names', [])
+    common_name = common_names[0] if common_names else species
+    
+    # Parametri irrigazione
     watering = 'average'
     w = details.get('watering', {})
-
     if w.get('min') is not None and w.get('max') is not None:
         avg = (w['min'] + w['max']) / 2
         if avg >= 4: watering = 'frequent'
@@ -289,9 +330,15 @@ def plantid_identify(image_base64: str) -> dict:
     hum_min, hum_max = hum_map[watering]
     
     return {
-        'species': species, 'common_name': common_name, 'confidence': confidence,
+        'species': species, 
+        'common_name': common_name, 
+        'confidence': confidence,
         'params': {
-            'temp_min': 15, 'temp_max': 30, 'humidity_min': hum_min, 'humidity_max': hum_max,
-            'watering': watering, 'sunlight': sunlight,
+            'temp_min': 15, 
+            'temp_max': 30, 
+            'humidity_min': hum_min, 
+            'humidity_max': hum_max,
+            'watering': watering, 
+            'sunlight': sunlight,
         }
     }

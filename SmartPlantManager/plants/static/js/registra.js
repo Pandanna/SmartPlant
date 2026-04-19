@@ -227,7 +227,11 @@ async function startAnalysis() {
     // Rotazione etichette di caricamento
     const labels = ['Riconoscimento specie...', 'Recupero parametri...', 'Configurazione dispositivo...'];
     let li = 0;
-    const interval = setInterval(() => { li = (li + 1) % labels.length; document.getElementById('loading-label').textContent = labels[li]; }, 2000);
+    const interval = setInterval(() => { 
+        li = (li + 1) % labels.length; 
+        const lbl = document.getElementById('loading-label');
+        if (lbl) lbl.textContent = labels[li]; 
+    }, 2000);
 
     try {
         const res = await fetch(URL_ANALIZZA, {
@@ -235,14 +239,27 @@ async function startAnalysis() {
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
             body: JSON.stringify({ image: currentBase64, device_id: selectedDevice, pin: selectedPin, nickname: nickname })
         });
-        clearInterval(interval);
-        const data = await res.json();
         
-        if (!res.ok || data.error) throw new Error(data.error || 'Errore sconosciuto');
+        clearInterval(interval);
+        
+        let data;
+        const contentType = res.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") !== -1) {
+            data = await res.json();
+        } else {
+            // Se non è JSON, probabilmente è una pagina di errore HTML di Django
+            throw new Error("Il server ha risposto in modo inatteso. Riprova tra qualche istante.");
+        }
+        
+        if (!res.ok || data.error) {
+            throw new Error(data.error || `Errore del server (${res.status})`);
+        }
+        
         showResult(data);
     } catch(err) {
         clearInterval(interval);
-        document.getElementById('error-msg').textContent = err.message || 'Errore di rete.';
+        console.error("Analysis error:", err);
+        document.getElementById('error-msg').textContent = err.message || 'Errore di connessione al server.';
         document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
         document.getElementById('step-error').classList.add('active');
         document.getElementById('progress-bar').style.display = 'none';
