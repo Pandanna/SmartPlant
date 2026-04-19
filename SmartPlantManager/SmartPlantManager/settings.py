@@ -89,12 +89,12 @@ if DATABASE_URL:
         if _db:
             DATABASES = {
                 'default': {
-                    'ENGINE':   'django.db.backends.postgresql',
-                    'NAME':     _db.group('name').split('?')[0], # Pulisce eventuali parametri extra
-                    'USER':     _db.group('user'),
+                    'ENGINE': 'django.db.backends.postgresql',
+                    'NAME': _db.group('name').split('?')[0], # Pulisce eventuali parametri extra
+                    'USER': _db.group('user'),
                     'PASSWORD': _db.group('password'),
-                    'HOST':     _db.group('host'),
-                    'PORT':     _db.group('port') or '5432',
+                    'HOST': _db.group('host'),
+                    'PORT': _db.group('port') or '5432',
                 }
             }
         else:
