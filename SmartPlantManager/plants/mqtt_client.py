@@ -67,11 +67,13 @@ def start_mqtt_listener():
             client.on_connect = on_connect
             client.on_message = on_message
 
-            # Percorsi garantiti dal volume in docker-compose
+            # Percorsi configurabili (Default locale: /certs/)
+            certs_path = os.getenv('MQTT_CERTS_PATH', '/certs/')
+
             client.tls_set(
-                ca_certs='/certs/rootCA.pem',
-                certfile='/certs/device.crt',
-                keyfile='/certs/private.key',
+                ca_certs=os.path.join(certs_path, 'rootCA.pem'),
+                certfile=os.path.join(certs_path, 'device.crt'),
+                keyfile=os.path.join(certs_path, 'private.key'),
                 tls_version=ssl.PROTOCOL_TLSv1_2,
                 cert_reqs=ssl.CERT_REQUIRED,
             )

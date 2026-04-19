@@ -81,8 +81,9 @@ DATABASE_URL = config('DATABASE_URL', default=None)
 
 if DATABASE_URL:
     try:
+        # Supportiamo sia postgres:// che postgresql://
         _db = re.match(
-            r'postgres://(?P<user>[^:]+):(?P<password>[^@]+)@(?P<host>[^:]+):(?P<port>\d+)/(?P<name>.+)',
+            r'postgres(?:ql)?://(?P<user>[^:]+):(?P<password>[^@]+)@(?P<host>[^:]+):(?P<port>\d+)/(?P<name>.+)',
             DATABASE_URL
         )
         DATABASES = {

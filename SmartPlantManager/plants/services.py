@@ -192,14 +192,17 @@ def run_auto_irrigation_check():
 # --- MQTT PUBLISH ---
 
 def publish_mqtt(topic: str, payload: dict, qos: int = 1, retain: bool = False):
+    # Percorsi configurabili (Default locale: /certs/)
+    certs_path = os.getenv('MQTT_CERTS_PATH', '/certs/')
+
     try:
         publish.single(
             topic = topic, payload = json.dumps(payload), qos = qos, retain = retain,
             hostname = settings.AWS_IOT_ENDPOINT, port = settings.AWS_IOT_PORT,
             tls = {
-                'ca_certs': '/certs/rootCA.pem',
-                'certfile': '/certs/device.crt',
-                'keyfile': '/certs/private.key',
+                'ca_certs': os.path.join(certs_path, 'rootCA.pem'),
+                'certfile': os.path.join(certs_path, 'device.crt'),
+                'keyfile': os.path.join(certs_path, 'private.key'),
                 'tls_version': ssl.PROTOCOL_TLSv1_2,
                 'cert_reqs': ssl.CERT_REQUIRED,
             }
