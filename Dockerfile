@@ -24,5 +24,5 @@ RUN DJANGO_SECRET_KEY=build_step_key \
 # Espone la porta 8000
 EXPOSE 8000
 
-# Avvia il server con gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "SmartPlantManager.wsgi:application"]
+# Avvia lo script di avvio che gestisce migrazioni, admin e server
+CMD ["sh", "render-start.sh"]
