@@ -29,6 +29,7 @@ class Utente(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(max_length=200, unique=True)
     telegram = models.CharField(max_length=50, blank=True, null=True)
     telegram_chat_id = models.CharField(max_length=50, blank=True, null=True)
+    avatar = models.TextField(blank=True, default='')
     is_admin = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)

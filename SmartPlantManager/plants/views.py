@@ -6,6 +6,7 @@ from django.utils import timezone
 from accounts.decorators import login_required_custom
 from .models import Dispositivo, Pianta, IrrigazioneLog
 from .services import publish_irrigazione, publish_config, publish_event, plantid_identify
+import logging
 
 
 #  PAGINE HTML 
@@ -209,6 +210,9 @@ def registra_analizza(request):
     nickname = data.get('nickname')
     manual = data.get('manual')
 
+    logger = logging.getLogger(__name__)
+    logger.warning(f"[registra_analizza] device={device_id} manual={'SI' if manual else 'NO'} image={'SI' if image else 'NO'}")
+
     # Verifica ID e PIN
     dispositivo = get_object_or_404(Dispositivo, device_id=device_id, pin=pin)
     
@@ -241,6 +245,8 @@ def registra_analizza(request):
         temp_max = params.get('temp_max', 30),
         humidity_min = params.get('humidity_min', 40),
         humidity_max = params.get('humidity_max', 70),
+        soil_min = params.get('soil_min', 30),
+        soil_max = params.get('soil_max', 80),
         sunlight = params.get('sunlight', 'full sun'),
         watering = params.get('watering', 'average'),
         manual = (result['confidence'] == 0),

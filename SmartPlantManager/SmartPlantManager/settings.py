@@ -145,7 +145,8 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 AWS_IOT_ENDPOINT = config('AWS_IOT_ENDPOINT', default='')
 AWS_IOT_PORT = config('AWS_IOT_PORT', default=8883, cast=int)
 PLANTID_API_KEY = config('PLANTID_API_KEY', default='')
-PERENUAL_API_KEY = config('PERENUAL_API_KEY', default='')
+OPENPLANTBOOK_CLIENT_ID = config('OPENPLANTBOOK_CLIENT_ID', default='')
+OPENPLANTBOOK_CLIENT_SECRET = config('OPENPLANTBOOK_CLIENT_SECRET', default='')
 TELEGRAM_TOKEN = config('TELEGRAM_TOKEN', default='')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

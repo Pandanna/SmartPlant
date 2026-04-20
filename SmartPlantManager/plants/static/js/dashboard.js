@@ -1,17 +1,15 @@
-const _cfg = document.getElementById('js-config').dataset;
-const URL_HOME_DATA = _cfg.urlHomeData;
-
 let plantsData = {};
 let currentFilter = 'all';
 let searchQuery = '';
 
 document.addEventListener('DOMContentLoaded', () => {
     updateDate();
-    
-    startPolling(URL_HOME_DATA, (data) => {
-        plantsData = data.plants || {};
+
+    // I dati arrivano da notifications.js che gestisce il polling globale
+    document.addEventListener('plantDataUpdated', (e) => {
+        plantsData = e.detail;
         renderDashboard();
-    }, 30000);
+    });
 
     const searchInput = document.getElementById('search-input');
     if(searchInput) {

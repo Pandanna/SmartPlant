@@ -1,11 +1,14 @@
 from django.shortcuts import render, redirect
+from django.urls import reverse
 from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.contrib import messages
 from .forms import LoginForm, RegisterForm, ProfileForm
 from .models import Utente
 from .decorators import admin_required, login_required_custom
-from plants.models import Pianta
+from plants.models import Pianta, Dispositivo
 from django.db.models import Q
+from django.utils import timezone
+from datetime import timedelta
 import requests
 from django.conf import settings
 from django.http import JsonResponse
@@ -46,20 +49,59 @@ def register(request):
     return render(request, 'register.html', {'form': form})
 
 
+def _dispositivi_data():
+    now = timezone.now()
+    result = []
+    for d in Dispositivo.objects.select_related('pianta', 'pianta__utente').order_by('device_id'):
+        ha_pianta = hasattr(d, 'pianta')
+        is_online = bool(d.last_seen and (now - d.last_seen) < timedelta(minutes=2))
+
+        if d.last_seen:
+            delta = now - d.last_seen
+            secs = delta.total_seconds()
+            if secs < 60:
+                time_ago = 'Adesso'
+            elif secs < 3600:
+                time_ago = f'{int(secs // 60)}min fa'
+            elif secs < 86400:
+                time_ago = f'{int(secs // 3600)}h fa'
+            else:
+                time_ago = f'{delta.days}g fa'
+        else:
+            time_ago = 'Mai'
+
+        result.append({
+            'obj': d,
+            'ha_pianta': ha_pianta,
+            'pianta': d.pianta if ha_pianta else None,
+            'is_online': is_online,
+            'time_ago': time_ago,
+        })
+    return result
+
+
 @login_required_custom
 @admin_required
 def admin_utenti(request):
     utenti = Utente.objects.all().order_by('created_at')
-
-    # Conta piante per utente
     piante_count = {
         u.username: Pianta.objects.filter(utente=u).count()
         for u in utenti
     }
-
+    
+    dispositivi = _dispositivi_data()
+    stats = {
+        'totale': len(dispositivi),
+        'liberi': sum(1 for d in dispositivi if not d['ha_pianta']),
+        'associati': sum(1 for d in dispositivi if d['ha_pianta']),
+        'online': sum(1 for d in dispositivi if d['is_online']),
+    }
+    
     return render(request, 'admin_utenti.html', {
         'utenti': utenti,
         'piante_count': piante_count,
+        'dispositivi': dispositivi,
+        'stats': stats,
     })
 
 
@@ -83,6 +125,54 @@ def admin_elimina_utente(request):
             messages.error(request, 'Utente non trovato.')
 
     return redirect('admin_utenti')
+
+
+@login_required_custom
+@admin_required
+def admin_crea_dispositivo(request):
+    if request.method == 'POST':
+        device_id = request.POST.get('device_id', '').strip()
+        if not device_id:
+            messages.error(request, 'Inserisci un ID dispositivo.')
+        elif Dispositivo.objects.filter(device_id=device_id).exists():
+            messages.error(request, f'Il dispositivo "{device_id}" esiste già.')
+        else:
+            Dispositivo.objects.create(device_id=device_id)
+            messages.success(request, f'Dispositivo "{device_id}" creato.')
+    return redirect(reverse('admin_utenti') + '?tab=dispositivi')
+
+
+@login_required_custom
+@admin_required
+def admin_rigenera_pin(request):
+    if request.method == 'POST':
+        device_id = request.POST.get('device_id', '').strip()
+        try:
+            d = Dispositivo.objects.get(device_id=device_id)
+            import random, string
+            d.pin = ''.join(random.choices(string.digits, k=6))
+            d.save(update_fields=['pin'])
+            messages.success(request, f'PIN rigenerato per "{device_id}"')
+        except Dispositivo.DoesNotExist:
+            messages.error(request, 'Dispositivo non trovato.')
+    return redirect(reverse('admin_utenti') + '?tab=dispositivi')
+
+
+@login_required_custom
+@admin_required
+def admin_elimina_dispositivo(request):
+    if request.method == 'POST':
+        device_id = request.POST.get('device_id', '').strip()
+        try:
+            d = Dispositivo.objects.get(device_id=device_id)
+            if hasattr(d, 'pianta'):
+                messages.error(request, f'Impossibile eliminare "{device_id}": ha una pianta collegata.')
+            else:
+                d.delete()
+                messages.success(request, f'Dispositivo "{device_id}" eliminato.')
+        except Dispositivo.DoesNotExist:
+            messages.error(request, 'Dispositivo non trovato.')
+    return redirect(reverse('admin_utenti') + '?tab=dispositivi')
 
 
 @login_required_custom
@@ -117,12 +207,18 @@ def profile(request):
     if request.method == 'POST':
         form = ProfileForm(request.POST, instance=request.user)
         if form.is_valid():
-            form.save()
+            user = form.save(commit=False)
+            avatar = request.POST.get('avatar', '').strip()
+            
+            if avatar:
+                user.avatar = avatar
+            user.save()
+            
             messages.success(request, 'Profilo aggiornato con successo!')
             return redirect('profile')
     else:
         form = ProfileForm(instance=request.user)
-    
+
     return render(request, 'profile.html', {'form': form})
 
 @csrf_exempt

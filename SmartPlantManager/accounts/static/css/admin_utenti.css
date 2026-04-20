@@ -52,6 +52,102 @@
   background: var(--card2);
 }
 
+/* Tab bar */
+.tab-bar {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0;
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color .15s, border-color .15s;
+}
+
+.tab-btn.active {
+  color: var(--text);
+  border-bottom-color: var(--green);
+}
+
+.tab-btn:hover:not(.active) {
+  color: var(--text);
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+/* Stat cards dispositivi */
+.device-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.device-stat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 12px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+
+.device-stat-card:hover {
+  background: var(--surface);
+}
+
+.device-stat-card.active {
+  border-color: var(--green);
+  background: var(--green-d);
+}
+
+.device-stat-val {
+  font-family: var(--mono);
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.device-stat-lbl {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+/* PIN toggle button */
+.btn-pin-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px 4px;
+  opacity: .5;
+  transition: opacity .15s;
+  line-height: 1;
+}
+
+.btn-pin-toggle:hover {
+  opacity: 1;
+}
+
 /* Messaggi di feedback Django */
 .msg-success {
   background: var(--green-d);

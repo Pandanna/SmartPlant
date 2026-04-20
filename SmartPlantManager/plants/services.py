@@ -3,6 +3,7 @@ services.py — Logica di business centralizzata per SmartPlant.
 """
 import json
 import logging
+import os
 import requests
 from django.conf import settings
 from django.utils import timezone
@@ -11,8 +12,7 @@ import paho.mqtt.publish as publish
 import ssl
 from .telegram import send_telegram_message
 from datetime import timedelta
-from .models import Dispositivo, Pianta
-from .models import Pianta, IrrigazioneLog
+from .models import Dispositivo, Pianta, IrrigazioneLog, PlantCareCache
 from .telegram import send_telegram_message
 import datetime
 
@@ -249,13 +249,13 @@ def plantid_identify(image_base64: str) -> dict:
         logger.error("PLANTID_API_KEY non configurata nei settings.")
         raise ValueError("Servizio di identificazione non configurato (API Key mancante).")
 
-    url = 'https://plant.id/api/v3/identification?details=common_names,watering,best_light_condition'
-    
+    url = 'https://plant.id/api/v3/identification?details=common_names'
+
     try:
         resp = requests.post(
-            url, 
-            headers={'Api-Key': api_key}, 
-            json={'images': [image_base64]}, 
+            url,
+            headers={'Api-Key': api_key},
+            json={'images': [image_base64]},
             timeout=30
         )
     except requests.exceptions.Timeout:
@@ -307,38 +307,126 @@ def plantid_identify(image_base64: str) -> dict:
     details = best.get('details', {})
     common_names = details.get('common_names', [])
     common_name = common_names[0] if common_names else species
-    
-    # Parametri irrigazione
-    watering = 'average'
-    w = details.get('watering', {})
-    if w.get('min') is not None and w.get('max') is not None:
-        avg = (w['min'] + w['max']) / 2
-        if avg >= 4: watering = 'frequent'
-        elif avg >= 2.5: watering = 'average'
-        elif avg >= 1.5: watering = 'minimum'
-        else: watering = 'none'
 
-    sunlight = 'full sun'
-    lc = (details.get('best_light_condition') or '').lower()
+    care_params = openplantbook_get_care(species)
 
-    if 'shade' in lc or 'low' in lc: 
-        sunlight = 'full shade'
-    elif 'part' in lc or 'indirect' in lc: 
-        sunlight = 'part shade'
-
-    hum_map = {'frequent': (60, 80), 'average': (40, 70), 'minimum': (25, 50), 'none': (20, 40)}
-    hum_min, hum_max = hum_map[watering]
-    
     return {
-        'species': species, 
-        'common_name': common_name, 
+        'species': species,
+        'common_name': common_name,
         'confidence': confidence,
-        'params': {
-            'temp_min': 15, 
-            'temp_max': 30, 
-            'humidity_min': hum_min, 
-            'humidity_max': hum_max,
-            'watering': watering, 
-            'sunlight': sunlight,
-        }
+        'params': care_params,
     }
+
+
+def openplantbook_get_care(species_name: str) -> dict:
+    """
+    Cerca la specie su Open Plantbook e restituisce i parametri.
+    Controlla prima la cache locale prima di fare la chiamata API.
+    """
+    pid = species_name.lower()
+
+    # Controlla cache locale
+    cached = PlantCareCache.objects.filter(pid=pid).first()
+    if cached:
+        logger.info(f"Cache hit per '{pid}'")
+        return cached.to_dict()
+
+    client_id     = settings.OPENPLANTBOOK_CLIENT_ID
+    client_secret = settings.OPENPLANTBOOK_CLIENT_SECRET
+    if not client_id or not client_secret:
+        logger.error("OPENPLANTBOOK_CLIENT_ID/SECRET non configurati nei settings.")
+        raise ValueError("Servizio parametri non configurato (credenziali mancanti).")
+
+    base = 'https://open.plantbook.io/api/v1'
+
+    # 1. ottiene token OAuth2
+    try:
+        token_resp = requests.post(
+            f'{base}/token/',
+            data={'grant_type': 'client_credentials', 'client_id': client_id, 'client_secret': client_secret},
+            timeout=15,
+        )
+    except requests.exceptions.Timeout:
+        logger.error("Timeout durante l'autenticazione Open Plantbook")
+        raise ValueError("Il servizio parametri ha impiegato troppo tempo a rispondere. Riprova.")
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Errore di rete Open Plantbook (token): {e}")
+        raise ValueError("Impossibile connettersi al servizio parametri. Controlla la connessione.")
+
+    if token_resp.status_code not in (200, 201):
+        logger.error(f"Open Plantbook token errore {token_resp.status_code}: {token_resp.text}")
+        raise ValueError("Errore di autenticazione con il servizio parametri.")
+
+    token = token_resp.json().get('access_token')
+    if not token:
+        logger.error("Open Plantbook: access_token mancante nella risposta")
+        raise ValueError("Errore di autenticazione con il servizio parametri.")
+
+    headers = {'Authorization': f'Bearer {token}'}
+
+    # 2. Dettaglio pianta: il pid è il nome scientifico
+    try:
+        detail_resp = requests.get(
+            f'{base}/plant/detail/{pid}/',
+            headers=headers,
+            timeout=15,
+        )
+    except requests.exceptions.Timeout:
+        logger.error("Timeout durante il dettaglio Open Plantbook")
+        raise ValueError("Il servizio parametri ha impiegato troppo tempo a rispondere. Riprova.")
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Errore di rete Open Plantbook (detail): {e}")
+        raise ValueError("Impossibile recuperare i parametri della pianta. Riprova più tardi.")
+
+    if detail_resp.status_code == 404:
+        logger.warning(f"Open Plantbook: specie '{species_name}' non trovata")
+        raise ValueError(f"Specie '{species_name}' non trovata nel database. Puoi riprovare con un'altra foto o inserire i parametri manualmente.")
+    if detail_resp.status_code == 429:
+        logger.warning("Limite di richieste Open Plantbook raggiunto")
+        raise ValueError("Limite di richieste raggiunto per il servizio parametri. Riprova tra qualche minuto.")
+    if detail_resp.status_code not in (200, 201):
+        logger.error(f"Open Plantbook detail errore {detail_resp.status_code}: {detail_resp.text}")
+        raise ValueError(f"Errore nel recupero dei parametri ({detail_resp.status_code}).")
+
+    d = detail_resp.json()
+
+    # Temperatura
+    temp_min = round(d['min_temp']) if d.get('min_temp') is not None else 15
+    temp_max = round(d['max_temp']) if d.get('max_temp') is not None else 35
+
+    # Umidità aria
+    humidity_min = round(d['min_env_humid']) if d.get('min_env_humid') is not None else 40
+    humidity_max = round(d['max_env_humid']) if d.get('max_env_humid') is not None else 60
+
+    # Umidità suolo
+    soil_min = round(d['min_soil_moist']) if d.get('min_soil_moist') is not None else 30
+    soil_max = round(d['max_soil_moist']) if d.get('max_soil_moist') is not None else 60
+
+    # Luce (usa max_light_lux come indicatore della piena esposizione)
+    lux_max = d.get('max_light_lux') or 0
+    if lux_max > 50000:   sunlight = 'full sun'
+    elif lux_max > 10000: sunlight = 'part shade'
+    else:                 sunlight = 'full shade'
+
+    # Irrigazione derivata da soil_max
+    if soil_max >= 70:   watering = 'frequent'
+    elif soil_max >= 50: watering = 'average'
+    elif soil_max >= 30: watering = 'minimum'
+    else:                watering = 'none'
+
+    care = {
+        'temp_min':     temp_min,
+        'temp_max':     temp_max,
+        'humidity_min': humidity_min,
+        'humidity_max': humidity_max,
+        'soil_min':     soil_min,
+        'soil_max':     soil_max,
+        'sunlight':     sunlight,
+        'watering':     watering,
+    }
+
+    # Salva in cache per uso futuro
+    PlantCareCache.objects.create(pid=pid, **care)
+    logger.info(f"Parametri salvati in cache per '{pid}'")
+
+    return care

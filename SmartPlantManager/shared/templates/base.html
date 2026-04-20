@@ -36,6 +36,43 @@
     </div>
     
     <div style="display: flex; align-items: center; gap: 8px;">
+
+      <!-- Notifiche allarmi -->
+      <div style="position: relative;">
+        <button id="notif-btn" style="
+          position: relative; background: var(--surface); border: 1px solid var(--border);
+          border-radius: 8px; width: 34px; height: 34px; cursor: pointer;
+          display: flex; align-items: center; justify-content: center; font-size: 15px;
+          transition: background .15s;
+        " title="Allarmi">🔔
+          <span id="notif-badge" style="
+            display: none; position: absolute; top: -5px; right: -5px;
+            background: var(--red); color: #fff; font-size: 9px; font-weight: 700;
+            min-width: 17px; height: 17px; border-radius: 9px; padding: 0 4px;
+            align-items: center; justify-content: center; font-family: var(--mono);
+            pointer-events: none;
+          ">0</span>
+        </button>
+
+        <div id="notif-panel" style="
+          display: none; position: absolute; top: calc(100% + 8px); right: 0;
+          width: 300px; background: var(--card); border: 1px solid var(--border);
+          border-radius: var(--r-lg); box-shadow: 0 8px 24px rgba(0,0,0,.1);
+          z-index: 100; overflow: hidden;
+        ">
+          <div style="
+            padding: .6rem 1rem; border-bottom: 1px solid var(--border);
+            font-size: 11px; font-weight: 600; color: var(--muted);
+            letter-spacing: .05em; text-transform: uppercase;
+          ">Allarmi attivi</div>
+          <div id="notif-list" style="max-height: 320px; overflow-y: auto;">
+            <div style="padding: 2rem 1rem; text-align: center; font-size: 13px; color: var(--muted);">
+              Caricamento...
+            </div>
+          </div>
+        </div>
+      </div>
+
       <a href="{% url 'profile' %}" style="
         display: flex; align-items: center; gap: 7px; padding: 4px 10px 4px 4px;
         background: var(--surface); border: 1px solid var(--border);
@@ -45,8 +82,13 @@
           width: 24px; height: 24px; border-radius: 50%; background: var(--green);
           display: flex; align-items: center; justify-content: center;
           font-size: 9px; font-weight: 600; color: #fff; letter-spacing: .02em; flex-shrink: 0;
+          overflow: hidden;
         ">
-          {{ request.user.username|make_list|first|upper }}
+          {% if request.user.avatar %}
+            <img src="data:image/jpeg;base64,{{ request.user.avatar }}" style="width:100%;height:100%;object-fit:cover;">
+          {% else %}
+            {{ request.user.username|make_list|first|upper }}
+          {% endif %}
         </div>
         <span style="font-size: 13px; font-weight: 500; color: var(--text);">{{ request.user.username }}</span>
         {% if request.user.is_staff or request.user.is_admin %}
@@ -72,6 +114,9 @@
   </div>
 
   <script src="{% static 'js/plant_utils.js' %}"></script>
+  {% if request.user.is_authenticated %}
+  <script src="{% static 'js/notifications.js' %}"></script>
+  {% endif %}
   {% block extra_js %}{% endblock %}
 </body>
 </html>

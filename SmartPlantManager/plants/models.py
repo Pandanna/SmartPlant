@@ -132,3 +132,38 @@ class IrrigazioneLog(models.Model):
 
     def __str__(self):
         return f"{self.pianta.nickname} — {self.timestamp:%d/%m/%Y %H:%M}"
+
+
+class PlantCareCache(models.Model):
+    """
+    Cache locale dei parametri di cura per specie (da Open Plantbook).
+    Evita chiamate API ripetute per la stessa specie.
+    """
+    pid = models.CharField(max_length=200, unique=True)  # nome scientifico lowercase
+    temp_min = models.FloatField()
+    temp_max = models.FloatField()
+    humidity_min = models.FloatField()
+    humidity_max = models.FloatField()
+    soil_min = models.FloatField()
+    soil_max = models.FloatField()
+    sunlight = models.CharField(max_length=20)
+    watering = models.CharField(max_length=20)
+    cached_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Cache parametri pianta"
+
+    def __str__(self):
+        return self.pid
+
+    def to_dict(self):
+        return {
+            'temp_min': self.temp_min,
+            'temp_max': self.temp_max,
+            'humidity_min': self.humidity_min,
+            'humidity_max': self.humidity_max,
+            'soil_min': self.soil_min,
+            'soil_max': self.soil_max,
+            'sunlight': self.sunlight,
+            'watering': self.watering,
+        }
