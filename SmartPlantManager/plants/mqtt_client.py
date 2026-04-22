@@ -24,8 +24,8 @@ def start_mqtt_listener():
         def on_connect(client, userdata, flags, rc, properties=None):
             if rc == 0:
                 logger.info(f"✅ Django MQTT Connesso (ID: {client_id})")
-                client.subscribe("smart_plants/+/+")
-                logger.info("📡 Sottoscritto a: smart_plants/+/+")
+                client.subscribe("smartplant/+/+")
+                logger.info("📡 Sottoscritto a: smartplant/+/+")
             else:
                 # AWS spesso rifiuta connessioni per certificati errati o ID duplicati
                 logger.error(f"❌ Connessione MQTT fallita (Codice: {rc})")

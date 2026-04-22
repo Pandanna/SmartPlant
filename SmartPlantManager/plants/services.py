@@ -237,7 +237,7 @@ def publish_config(device_id: str, params: dict):
 
 def publish_event(event_type: str, payload: dict):
     """Evento generico per servizi esterni"""
-    publish_mqtt(f"smart_plants/events/{event_type}", payload, retain=False)
+    publish_mqtt(f"smartplant/events/{event_type}", payload, retain=False)
 
 def plantid_identify(image_base64: str) -> dict:
     # Rimuoviamo il prefisso data:image/...;base64, se presente

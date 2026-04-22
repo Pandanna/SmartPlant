@@ -3,7 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# Django stuff
+# Django
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
@@ -31,17 +31,10 @@ node_modules/
 # Project specific secrets
 certs/*
 ESP32Code/lib/utils/secrets.h
+ESP32Code/.pio
+ESP32Code/.vscode/*
 
 # OS generated files
 .DS_Store
 Thumbs.db
 *.log
-
-ESP32Code/*
-SmartPlant.jsx
-admin_creds.txt
-ARCHITECTURE_AND_COMMUNICATION.md
-REUSE_MANUAL.md
-Logo.png
-.claude/*
-CLAUDE.md
