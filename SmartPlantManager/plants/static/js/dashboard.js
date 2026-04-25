@@ -4,14 +4,13 @@ let searchQuery = '';
 
 document.addEventListener('DOMContentLoaded', () => {
     updateDate();
-
-    // I dati arrivano da notifications.js che gestisce il polling globale
     document.addEventListener('plantDataUpdated', (e) => {
         plantsData = e.detail;
         renderDashboard();
     });
 
     const searchInput = document.getElementById('search-input');
+
     if(searchInput) {
         searchInput.addEventListener('input', (e) => {
             searchQuery = e.target.value.toLowerCase();
@@ -28,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const btnClear = document.getElementById('btn-clear-filter');
+
     if(btnClear) {
         btnClear.addEventListener('click', () => {
             currentFilter = 'all';
@@ -41,7 +41,9 @@ document.addEventListener('DOMContentLoaded', () => {
 function updateDate() {
     const options = { weekday: 'long', day: 'numeric', month: 'long' };
     const dateEl = document.getElementById('current-date');
-    if (dateEl) dateEl.textContent = new Date().toLocaleDateString('it-IT', options);
+
+    if (dateEl) 
+        dateEl.textContent = new Date().toLocaleDateString('it-IT', options);
 }
 
 function renderDashboard() {
@@ -50,19 +52,25 @@ function renderDashboard() {
     const filterStatus = document.getElementById('filter-status');
     const statGrid = document.querySelector('.stat-grid');
     
-    if (!grid) return;
+    if (!grid) 
+        return;
 
     const rawPlants = Object.values(plantsData);
     if (rawPlants.length === 0) {
         grid.style.display = 'none';
         emptyState.style.display = 'block';
-        if(statGrid) statGrid.style.display = 'none';
+
+        if(statGrid) 
+            statGrid.style.display = 'none';
+
         return;
     }
 
     grid.style.display = 'grid';
     emptyState.style.display = 'none';
-    if(statGrid) statGrid.style.display = 'grid';
+
+    if(statGrid) 
+        statGrid.style.display = 'grid';
 
     const plants = rawPlants.map(formatPlant);
 
@@ -76,21 +84,34 @@ function renderDashboard() {
 
     Object.keys(stats).forEach(key => {
         const el = document.getElementById(`stat-${key}`);
-        if(el) el.textContent = stats[key];
+
+        if(el) 
+            el.textContent = stats[key];
     });
 
     document.querySelectorAll('.stat-card').forEach(card => {
-        if(card.dataset.filter === currentFilter) card.classList.add('active');
-        else card.classList.remove('active');
+        if(card.dataset.filter === currentFilter) 
+            card.classList.add('active');
+        else 
+            card.classList.remove('active');
     });
 
     let filtered = plants;
+
     if (currentFilter !== 'all') {
-        if (currentFilter === 'healthy') filtered = filtered.filter(p => p.health >= 80);
-        if (currentFilter === 'water') filtered = filtered.filter(p => p.hStatus !== 'ok');
-        if (currentFilter === 'alarm') filtered = filtered.filter(p => p.hasAlarm);
-        if (currentFilter === 'offline') filtered = filtered.filter(p => !p.isOnline);
+        if (currentFilter === 'healthy') 
+            filtered = filtered.filter(p => p.health >= 80);
+
+        if (currentFilter === 'water') 
+            filtered = filtered.filter(p => p.hStatus !== 'ok');
+
+        if (currentFilter === 'alarm') 
+            filtered = filtered.filter(p => p.hasAlarm);
+
+        if (currentFilter === 'offline') 
+            filtered = filtered.filter(p => !p.isOnline);
     }
+    
     if (searchQuery) {
         filtered = filtered.filter(p => 
             (p.nickname || '').toLowerCase().includes(searchQuery) ||

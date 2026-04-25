@@ -1,6 +1,4 @@
-/*  Componenti condivisi (Input, Button, Card, Badge)  */
-
-/*  Base inputs  */
+/* Inputs */
 input, select, textarea {
   font-family: var(--sans); font-size: .875rem; width: 100%;
   padding: .55rem .8rem; background: var(--card); color: var(--text);
@@ -8,14 +6,16 @@ input, select, textarea {
   outline: none; transition: border-color .15s, box-shadow .15s;
   appearance: none;
 }
+
 input:focus, select:focus { border-color: var(--green); box-shadow: 0 0 0 3px var(--green-d); }
 input::placeholder { color: var(--hint); }
+
 label {
   display: block; font-size: .75rem; font-weight: 500;
   color: var(--muted); margin-bottom: .3rem; letter-spacing: .025em;
 }
 
-/*  Buttons  */
+/* Bottoni */
 .btn {
   display: inline-flex; align-items: center; gap: 6px;
   padding: .55rem 1.1rem; border-radius: var(--r-md);
@@ -23,17 +23,18 @@ label {
   cursor: pointer; border: none; transition: all .15s; white-space: nowrap;
   text-decoration: none;
 }
+
 .btn:disabled { opacity: .4; cursor: not-allowed; }
-.btn-primary  { background: var(--green); color: #fff; }
-.btn-primary:hover:not(:disabled)  { background: var(--green-l); }
-.btn-outline  { background: transparent; color: var(--text); border: 1px solid var(--border); }
-.btn-outline:hover:not(:disabled)  { background: var(--surface); border-color: var(--border2); }
-.btn-ghost    { background: transparent; color: var(--muted); border: none; padding: .45rem .75rem; }
-.btn-ghost:hover:not(:disabled)    { background: var(--surface); color: var(--text); }
-.btn-danger   { background: var(--red-d); color: var(--red); border: 1px solid var(--red-b); }
-.btn-danger:hover:not(:disabled)   { background: var(--red); color: #fff; }
-.btn-blue     { background: var(--blue-d); color: var(--blue); border: 1px solid var(--blue-b); }
-.btn-blue:hover:not(:disabled)     { background: var(--blue); color: #fff; }
+.btn-primary { background: var(--green); color: #fff; }
+.btn-primary:hover:not(:disabled) { background: var(--green-l); }
+.btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
+.btn-outline:hover:not(:disabled) { background: var(--surface); border-color: var(--border2); }
+.btn-ghost { background: transparent; color: var(--muted); border: none; padding: .45rem .75rem; }
+.btn-ghost:hover:not(:disabled) { background: var(--surface); color: var(--text); }
+.btn-danger { background: var(--red-d); color: var(--red); border: 1px solid var(--red-b); }
+.btn-danger:hover:not(:disabled) { background: var(--red); color: #fff; }
+.btn-blue { background: var(--blue-d); color: var(--blue); border: 1px solid var(--blue-b); }
+.btn-blue:hover:not(:disabled) { background: var(--blue); color: #fff; }
 .btn-sm { padding: .35rem .75rem; font-size: .8rem; }
 .btn-back {
   color: var(--muted);
@@ -43,7 +44,7 @@ label {
 }
 .btn-back:hover { color: var(--text); background: transparent; }
 
-/*  Nav e Tab  */
+/* Nav e Tab */
 .nav-btn {
   padding: .38rem .72rem; border-radius: var(--r-sm); font-size: .85rem;
   color: var(--muted); cursor: pointer; border: none; background: transparent;
@@ -61,14 +62,14 @@ label {
 .tab.active { color: var(--green); border-bottom-color: var(--green); font-weight: 500; }
 .tab:hover:not(.active) { color: var(--text); }
 
-/*  Cards  */
+/* Cards */
 .card {
   background: var(--card); border: 1px solid var(--border);
   border-radius: var(--r-lg);
 }
 .card-p { padding: 1.25rem; }
 
-/*  Badge  */
+/* Badge */
 .badge {
   display: inline-flex; align-items: center; padding: 2px 8px;
   border-radius: 20px; font-size: .7rem; font-weight: 500; white-space: nowrap;
@@ -79,7 +80,7 @@ label {
 .badge-blue   { background: var(--blue-d);  color: var(--blue);  }
 .badge-gray   { background: var(--surface); color: var(--muted); }
 
-/*  Utilities e Form Error  */
+/* utilities e errori */
 .divider { height: 1px; background: var(--border); margin: 16px 0; }
 .field-err { font-size: .75rem; color: var(--red); margin-top: 4px; }
 .field-ok  { font-size: .75rem; color: var(--green); margin-top: 4px; }
@@ -120,7 +121,7 @@ label {
 .pc-sensor-item.alarm .pc-sensor-val { color: var(--red); }
 .pc-sensor-item.warning .pc-sensor-val { color: var(--amber); }
 
-/* Dot Online/Offline */
+/* Online/Offline */
 .dot {
   display: inline-block;
   width: 6px; height: 6px;

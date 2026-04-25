@@ -16,7 +16,6 @@
   margin-bottom: 20px;
 }
 
-/*  Barra di Progresso  */
 .progress-wrap {
   display: flex;
   align-items: center;
@@ -65,10 +64,8 @@
   margin-bottom: 16px;
   transition: background 0.3s;
 }
+
 .step-line.done { background: var(--green-b); }
-
-
-/*  Step Visibility  */
 .step { display: none; }
 .step.active { display: block; }
 
@@ -78,7 +75,6 @@
   margin-bottom: 16px;
 }
 
-/*  Box Immagine  */
 .preview-box {
   border: 1.5px dashed var(--border);
   border-radius: 12px;
@@ -96,11 +92,9 @@
 
 .preview-box:hover { border-color: var(--green); }
 .preview-box.has-photo { border-color: var(--green); background: var(--green-d); }
-
 .preview-placeholder { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px; }
 #preview-img { width: 100%; height: 100%; object-fit: cover; display: none; }
 
-/*  Riepilogo e Risultato  */
 .summary-box {
   background: var(--card2);
   border: 1px solid var(--border);
@@ -116,6 +110,7 @@
   padding: 5px 0;
   border-bottom: 1px solid var(--border);
 }
+
 .summary-row:last-child { border-bottom: none; }
 .summary-row .k { color: var(--muted); }
 .summary-row .v { font-weight: 500; }
@@ -146,7 +141,6 @@
   margin-bottom: 14px;
 }
 
-/* Utilities */
 .select-wrapper { position: relative; }
 .select-wrapper::after {
   content: '▼';

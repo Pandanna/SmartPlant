@@ -7,7 +7,9 @@ def admin_required(view_func):
     def _wrapped(request, *args, **kwargs):
         if request.user.is_authenticated and (request.user.is_admin or request.user.is_staff):
             return view_func(request, *args, **kwargs)
+        
         raise PermissionDenied
+    
     return _wrapped
 
 
@@ -16,5 +18,7 @@ def login_required_custom(view_func):
     def _wrapped(request, *args, **kwargs):
         if not request.user.is_authenticated:
             return redirect('login')
+        
         return view_func(request, *args, **kwargs)
+    
     return _wrapped

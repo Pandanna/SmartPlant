@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (activeChartKey) showChart(activeChartKey, false);
             }
         } else {
-            // Se la pianta non c'è più nel DB (eliminata), torna alla home
+            // Se la pianta è eliminata, torna alla home
             window.location.replace("/home/");
         }
     }, 30000);
@@ -43,7 +43,9 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function updateHeader() {
-    if (!currentPlant) return;
+    if (!currentPlant) 
+        return;
+
     const p = currentPlant;
 
     document.getElementById('det-online-dot').style.background = p.isOnline ? 'var(--green)' : 'var(--red)';
@@ -59,7 +61,9 @@ function updateHeader() {
 }
 
 function renderDetailTabs() {
-    if (!currentPlant) return;
+    if (!currentPlant) 
+        return;
+
     const container = document.getElementById('tab-content-container');
     const p = currentPlant;
     const th = p.params || {};
@@ -296,8 +300,9 @@ function renderDetailTabs() {
             </div>
         `;
         
-        // Aggiunge hover effect al box foto
         const box = document.getElementById('p-preview-box');
+
+        // opacità dell'immagine
         if (box) {
             const overlay = box.querySelector('.preview-overlay');
             box.onmouseenter = () => overlay.style.opacity = '1';
@@ -308,19 +313,29 @@ function renderDetailTabs() {
 
 function handleProfileImage(e) {
     const file = e.target.files[0];
-    if (!file) return;
+
+    if (!file) 
+        return;
 
     const reader = new FileReader();
+
     reader.onload = ev => {
         const img = new Image();
+
         img.onload = () => {
             const canvas = document.createElement('canvas');
             const maxSize = 800;
             let w = img.width, h = img.height;
+
             if (w > maxSize || h > maxSize) {
-                if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
-                else       { w = Math.round(w * maxSize / h); h = maxSize; }
+                if (w > h) {
+                    h = Math.round(h * maxSize / w); w = maxSize; 
+                }
+                else {
+                    w = Math.round(w * maxSize / h); h = maxSize;
+                }
             }
+
             canvas.width = w; canvas.height = h;
             canvas.getContext('2d').drawImage(img, 0, 0, w, h);
             
@@ -329,8 +344,10 @@ function handleProfileImage(e) {
             
             document.getElementById('p-preview-img').src = jpegDataUrl;
         };
+
         img.src = ev.target.result;
     };
+
     reader.readAsDataURL(file);
 }
 
@@ -339,7 +356,8 @@ async function salvaProfilo() {
     const nicknameVal = document.getElementById('p-nickname').value.trim();
     const speciesVal = document.getElementById('p-species').value.trim();
 
-    if (!nicknameVal) return alert("Il nome della pianta non può essere vuoto.");
+    if (!nicknameVal) 
+        return alert("Il nome della pianta non può essere vuoto.");
 
     btn.textContent = 'Salvataggio...';
     btn.disabled = true;
@@ -375,8 +393,12 @@ async function salvaProfilo() {
                 btn.style.background = '';
                 newProfileImageBase64 = null;
             }, 3000);
-        } else { throw new Error(); }
-    } catch (error) {
+        } 
+        else { 
+            throw new Error(); 
+        }
+    } 
+    catch (error) {
         btn.textContent = '✗ Errore';
         setTimeout(() => { btn.textContent = 'Salva Modifiche'; btn.disabled = false; }, 2000);
     }
@@ -416,11 +438,17 @@ async function salvaSoglie() {
                     currentPlant = formatPlant(data.plants[DEVICE_ID]);
                     updateHeader();
                     renderDetailTabs();
-                    if (activeChartKey) showChart(activeChartKey, false);
+
+                    if (activeChartKey) 
+                        showChart(activeChartKey, false);
                 }
             });
-        } else { throw new Error(); }
-    } catch (error) {
+        } 
+        else { 
+            throw new Error(); 
+        }
+    } 
+    catch (error) {
         btn.textContent = '✗ Errore';
         setTimeout(() => { btn.textContent = 'Salva Impostazioni'; btn.disabled = false; }, 2000);
     }
@@ -428,6 +456,7 @@ async function salvaSoglie() {
 
 async function toggleAutoIrr(isChecked) {
     const th = currentPlant.params;
+
     try {
         const res = await fetch(URL_SOGLIE, {
             method: 'POST',
@@ -440,17 +469,23 @@ async function toggleAutoIrr(isChecked) {
                 auto_irrigation: isChecked
             })
         });
+
         if (res.ok) {
             fetchPlantData(URL_HOME_DATA, (data) => {
                 if (data.plants && data.plants[DEVICE_ID]) {
                     currentPlant = formatPlant(data.plants[DEVICE_ID]);
                     updateHeader();
                     renderDetailTabs();
-                    if (activeChartKey) showChart(activeChartKey, false);
+
+                    if (activeChartKey) 
+                        showChart(activeChartKey, false);
                 }
             });
         }
-    } catch (e) { console.error(e); }
+    } 
+    catch (e) { 
+        console.error(e); 
+    }
 }
 
 async function avviaIrrigazione() {
@@ -475,11 +510,17 @@ async function avviaIrrigazione() {
                     currentPlant = formatPlant(data.plants[DEVICE_ID]);
                     updateHeader();
                     renderDetailTabs();
-                    if (activeChartKey) showChart(activeChartKey, false);
+
+                    if (activeChartKey) 
+                        showChart(activeChartKey, false);
                 }
             });
-        } else { throw new Error(); }
-    } catch (e) {
+        } 
+        else { 
+            throw new Error(); 
+        }
+    } 
+    catch (e) {
         btn.innerHTML = '✗ Errore';
         setTimeout(() => { btn.disabled = false; btn.innerHTML = '💧 Avvia irrigazione manuale'; }, 3000);
     }
@@ -492,29 +533,34 @@ function openDeleteModal() {
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
             body: JSON.stringify({ device_id: DEVICE_ID })
         }).then(res => {
-            if(res.ok) window.location.href = "/home/";
+            if(res.ok) 
+                window.location.href = "/home/";
         });
     }
 }
 
-let currentChartInterval = 86400000; // Default 1g
+let currentChartInterval = 86400000; // Default 1 giorno
 
 function showChart(key, smoothScroll = true, interval = null) {
-    if (!currentPlant || !currentPlant.history) return;
+    if (!currentPlant || !currentPlant.history) 
+        return;
     
     activeChartKey = key;
-    if (interval !== null) currentChartInterval = interval;
+
+    if (interval !== null) 
+        currentChartInterval = interval;
 
     const container = document.getElementById('chart-container');
     const canvas = document.getElementById('inline-chart-canvas');
     
     if (container) {
         container.style.display = 'block';
-        if (smoothScroll) container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+        if (smoothScroll) 
+            container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
     const intervalLabels = {
-        3600000: 'Ultima Ora',
         86400000: 'Ultimo Giorno',
         604800000: 'Ultimi 7 Giorni',
         2592000000: 'Ultimi 30 Giorni'
@@ -534,11 +580,13 @@ function showChart(key, smoothScroll = true, interval = null) {
                   key === 'soil' ? '#8b4513' :
                   key === 'light' ? '#e1b12c' :
                   '#4a9ed4';
+
     const bgColor = key === 'temperature' ? 'rgba(201,79,79,0.1)' : 
                     key === 'battery' ? 'rgba(42,99,64,0.1)' : 
                     key === 'soil' ? 'rgba(139,69,19,0.1)' :
                     key === 'light' ? 'rgba(225,177,44,0.1)' :
                     'rgba(74,158,212,0.1)';
+
     const unit = key === 'temperature' ? '°C' : 
                  key === 'light' ? 'lx' : '%';
 
@@ -557,16 +605,20 @@ function showChart(key, smoothScroll = true, interval = null) {
         document.getElementById('stat-min').textContent = (key === 'light' ? Math.round(min) : min.toFixed(1)) + unit;
         document.getElementById('stat-max').textContent = (key === 'light' ? Math.round(max) : max.toFixed(1)) + unit;
         document.getElementById('stat-avg').textContent = (key === 'light' ? Math.round(avg) : avg.toFixed(1)) + unit;
-    } else {
+    } 
+    else {
         document.getElementById('stat-min').textContent = '—';
         document.getElementById('stat-max').textContent = '—';
         document.getElementById('stat-avg').textContent = '—';
     }
 
-    if (inlineChart) inlineChart.destroy();
-    if (typeof Chart === 'undefined') return;
+    if (inlineChart) 
+        inlineChart.destroy();
 
-    // Configurazione etichette temporali dinamiche
+    if (typeof Chart === 'undefined') 
+        return;
+
+    // etichette temporali dinamiche
     const labelOptions = currentChartInterval <= 86400000 
         ? { hour: '2-digit', minute: '2-digit' }
         : { day: '2-digit', month: '2-digit', hour: '2-digit' };
@@ -598,7 +650,7 @@ function showChart(key, smoothScroll = true, interval = null) {
 }
 
 function updateChartInterval(ms, btn) {
-    // Aggiorna UI pulsanti
+    // Aggiorna pulsanti
     document.querySelectorAll('.btn-time').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     
@@ -610,6 +662,8 @@ function updateChartInterval(ms, btn) {
 
 function closeChart() {
     document.getElementById('chart-container').style.display = 'none';
-    if (inlineChart) { inlineChart.destroy(); inlineChart = null; }
+    if (inlineChart)
+        inlineChart.destroy(); inlineChart = null; 
+    
     activeChartKey = null;
 }

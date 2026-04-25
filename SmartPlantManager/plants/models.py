@@ -45,13 +45,13 @@ class Pianta(models.Model):
     """
     WATERING_CHOICES = [
         ('frequent', 'Frequente'),
-        ('average',  'Moderato'),
-        ('minimum',  'Scarso'),
-        ('none',     'Minimo'),
+        ('average', 'Moderato'),
+        ('minimum', 'Scarso'),
+        ('none', 'Minimo'),
     ]
 
     SUNLIGHT_CHOICES = [
-        ('full sun',   'Luce diretta'),
+        ('full sun', 'Luce diretta'),
         ('part shade', 'Parziale'),
         ('full shade', 'Ombra'),
     ]
@@ -74,7 +74,7 @@ class Pianta(models.Model):
     watering = models.CharField(max_length=20, choices=WATERING_CHOICES, default='average')
     auto_irrigation = models.BooleanField(default=False)
 
-    # Stato sensori (ultimo valore ricevuto via MQTT)
+    # Stato sensori (ultimo valore ricevuto da MQTT)
     last_temperature = models.FloatField(null=True, blank=True)
     last_humidity = models.FloatField(null=True, blank=True)
     last_light = models.FloatField(null=True, blank=True)
@@ -99,14 +99,14 @@ class Pianta(models.Model):
     def params_dict(self):
         """Restituisce i parametri nel formato usato dal frontend."""
         return {
-            'temp_min':        self.temp_min,
-            'temp_max':        self.temp_max,
-            'humidity_min':    self.humidity_min,
-            'humidity_max':    self.humidity_max,
-            'soil_min':        self.soil_min,
-            'soil_max':        self.soil_max,
-            'sunlight':        self.sunlight,
-            'watering':        self.watering,
+            'temp_min': self.temp_min,
+            'temp_max': self.temp_max,
+            'humidity_min': self.humidity_min,
+            'humidity_max': self.humidity_max,
+            'soil_min': self.soil_min,
+            'soil_max': self.soil_max,
+            'sunlight': self.sunlight,
+            'watering': self.watering,
             'auto_irrigation': self.auto_irrigation,
         }
 
@@ -139,7 +139,7 @@ class PlantCareCache(models.Model):
     Cache locale dei parametri di cura per specie (da Open Plantbook).
     Evita chiamate API ripetute per la stessa specie.
     """
-    pid = models.CharField(max_length=200, unique=True)  # nome scientifico lowercase
+    pid = models.CharField(max_length=200, unique=True)  # nome scientifico
     temp_min = models.FloatField()
     temp_max = models.FloatField()
     humidity_min = models.FloatField()

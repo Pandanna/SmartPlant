@@ -8,9 +8,6 @@ from .models import Dispositivo, Pianta, IrrigazioneLog
 from .services import publish_irrigazione, publish_config, publish_event, plantid_identify
 import logging
 
-
-#  PAGINE HTML 
-
 @login_required_custom
 def home(request):
     """Renderizza la Dashboard principale"""
@@ -20,6 +17,7 @@ def home(request):
 @login_required_custom
 def dettaglio_pianta(request, device_id):
     """Renderizza la pagina di dettaglio di una singola pianta"""
+
     if request.user.is_admin:
         pianta = get_object_or_404(Pianta, dispositivo__device_id=device_id)
     else:
@@ -28,12 +26,10 @@ def dettaglio_pianta(request, device_id):
     return render(request, 'dettaglio.html', {'pianta': pianta})
 
 
-#  API DATI E AZIONI 
-
 @login_required_custom
 @require_GET
 def home_data(request):
-    """API JSON consumata dal frontend per aggiornare sensori e salute"""
+    """API JSON usata dal frontend per aggiornare sensori e salute"""
     piante = Pianta.objects.select_related('dispositivo', 'utente').filter(
         utente=request.user
     )
@@ -75,7 +71,7 @@ def home_data(request):
 def soglie(request):
     try:
         data = json.loads(request.body)
-        device_id = data.get('device_id')
+        device_id = data.get('device_id', '').strip().lower()
 
         if request.user.is_admin:
             pianta = get_object_or_404(Pianta, dispositivo__device_id=device_id)
@@ -107,7 +103,7 @@ def soglie(request):
 def irrigazione(request):
     try:
         data = json.loads(request.body)
-        device_id = data.get('device_id')
+        device_id = data.get('device_id', '').strip().lower()
         duration = data.get('duration', 30)
 
         if request.user.is_admin:
@@ -135,7 +131,7 @@ def irrigazione(request):
 def elimina(request):
     try:
         data = json.loads(request.body)
-        device_id = data.get('device_id')
+        device_id = data.get('device_id', '').strip().lower()
 
         if request.user.is_admin:
             pianta = get_object_or_404(Pianta, dispositivo__device_id=device_id)
@@ -153,7 +149,7 @@ def elimina(request):
 def aggiorna_profilo_pianta(request):
     try:
         data = json.loads(request.body)
-        device_id = data.get('device_id')
+        device_id = data.get('device_id', '').strip().lower()
         nickname = data.get('nickname')
         species = data.get('species')
         image = data.get('image')
@@ -163,17 +159,20 @@ def aggiorna_profilo_pianta(request):
         else:
             pianta = get_object_or_404(Pianta, dispositivo__device_id=device_id, utente=request.user)
 
-        if nickname: pianta.nickname = nickname
-        if species:  pianta.species = species
-        if image:    pianta.image = image
+        if nickname: 
+            pianta.nickname = nickname
+
+        if species:  
+            pianta.species = species
+
+        if image:    
+            pianta.image = image
 
         pianta.save()
         return JsonResponse({'ok': True})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
 
-
-#  REGISTRAZIONE PIANTA 
 
 @login_required_custom
 def registra(request):
@@ -185,17 +184,18 @@ def registra(request):
 def valida_dispositivo(request):
     try:
         data = json.loads(request.body)
-        device_id = data.get('device_id')
+        device_id = data.get('device_id', '').strip().lower()
         pin = data.get('pin')
-
         dispositivo = Dispositivo.objects.get(device_id=device_id, pin=pin)
         
         if hasattr(dispositivo, 'pianta'):
             return JsonResponse({'error': 'Questo dispositivo è già associato a una pianta.'}, status=400)
             
         return JsonResponse({'ok': True})
+    
     except Dispositivo.DoesNotExist:
         return JsonResponse({'error': 'ID Dispositivo o PIN non validi.'}, status=404)
+    
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
 
@@ -205,11 +205,10 @@ def valida_dispositivo(request):
 def registra_analizza(request):
     data = json.loads(request.body)
     image = data.get('image')
-    device_id = data.get('device_id')
+    device_id = data.get('device_id', '').strip().lower()
     pin = data.get('pin')
     nickname = data.get('nickname')
     manual = data.get('manual')
-
     logger = logging.getLogger(__name__)
     logger.warning(f"[registra_analizza] device={device_id} manual={'SI' if manual else 'NO'} image={'SI' if image else 'NO'}")
 
@@ -224,13 +223,17 @@ def registra_analizza(request):
     else:
         if not image:
             return JsonResponse({'error': 'Nessuna immagine fornita.'}, status=400)
+        
         try:
             result = plantid_identify(image)
+
         except ValueError as e:
             return JsonResponse({'error': str(e)}, status=422)
+        
         except Exception as e:
             import traceback
             print(traceback.format_exc())
+            
             return JsonResponse({'error': 'Si è verificato un errore interno nel server. Riprova più tardi.'}, status=500)
 
     params = result['params']

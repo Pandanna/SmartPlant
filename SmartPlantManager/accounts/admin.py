@@ -4,8 +4,14 @@ from .models import Utente
 
 class UtenteAdmin(UserAdmin):
     model = Utente
-    list_display = ('username', 'email', 'is_admin', 'is_staff', 'is_active')
+    list_display = ('username', 'email', 'get_piante_count', 'is_admin', 'is_staff', 'is_active')
     list_filter = ('is_admin', 'is_staff', 'is_active')
+
+    def get_piante_count(self, obj):
+        return obj.piante.count()
+    
+    get_piante_count.short_description = 'Piante'
+    
     fieldsets = (
         (None, {'fields': ('username', 'email', 'telegram', 'password')}),
         ('Permessi', {'fields': ('is_admin', 'is_staff', 'is_active', 'is_superuser')}),
@@ -15,8 +21,9 @@ class UtenteAdmin(UserAdmin):
         (None, {
         'classes': ('wide',),
         'fields':  ('username', 'email', 'password1', 'password2', 'is_admin', 'is_staff', 'is_active'),
-    }),
+        }),
     )
+    
     search_fields = ('username', 'email')
     ordering = ('username',)
 

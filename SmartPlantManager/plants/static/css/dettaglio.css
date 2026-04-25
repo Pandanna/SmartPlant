@@ -1,4 +1,3 @@
-/* Header Dettaglio */
 .detail-header {
   display: flex;
   align-items: center;
@@ -16,7 +15,6 @@
   flex-shrink: 0;
 }
 
-/* Health Ring Header */
 .health-ring-small {
   width: 40px; height: 40px;
   border-radius: 50%;
@@ -25,9 +23,10 @@
   background: var(--surface);
   color: var(--muted);
 }
+
 .health-ring-small .val { font-family: var(--mono); font-size: 11px; font-weight: 500; line-height: 1; }
 .health-ring-small .pct { font-size: 7px; opacity: .7; }
-/* Time Selector per i grafici */
+
 .btn-time {
   padding: 4px 10px;
   font-size: 11px;
@@ -50,7 +49,6 @@
   color: white !important;
 }
 
-/* Stili per il Tab Profilo (Box Immagine) */
 .preview-box {
   border: 1.5px dashed var(--border);
   border-radius: 12px;

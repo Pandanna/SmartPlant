@@ -2,7 +2,7 @@
 
 # Applica le migrazioni al database
 echo "==> Migrazione database..."
-python manage.py migrate --noinput
+python manage.py migrate
 
 # Crea il superuser
 echo "==> Creazione superuser..."

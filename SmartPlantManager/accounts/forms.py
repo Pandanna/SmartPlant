@@ -74,6 +74,6 @@ class ProfileForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Rimuove gli help_text automatici di Django per mantenere il design pulito
+        
         for field in self.fields.values():
             field.help_text = None

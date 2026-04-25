@@ -6,10 +6,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SHARED_ROOT = BASE_DIR / 'shared'
 
 DEBUG = config('DJANGO_DEBUG', default=False, cast=bool)
-
-# Assicuriamoci che sia sempre una lista
 ALLOWED_HOSTS = config('DJANGO_ALLOWED_HOSTS', default='*', cast=Csv())
-
 SECRET_KEY = config('DJANGO_SECRET_KEY', default='django-insecure-default-change-me')
 
 CSRF_TRUSTED_ORIGINS = [
@@ -90,7 +87,7 @@ if DATABASE_URL:
             DATABASES = {
                 'default': {
                     'ENGINE': 'django.db.backends.postgresql',
-                    'NAME': _db.group('name').split('?')[0], # Pulisce eventuali parametri extra
+                    'NAME': _db.group('name').split('?')[0],
                     'USER': _db.group('user'),
                     'PASSWORD': _db.group('password'),
                     'HOST': _db.group('host'),
@@ -103,20 +100,18 @@ if DATABASE_URL:
         DATABASE_URL = None
 
 if not DATABASE_URL:
-    # Se abbiamo le variabili ambiente Postgres, usiamo quelle
     if config('POSTGRES_DB', default=None):
         DATABASES = {
             'default': {
-                'ENGINE':   'django.db.backends.postgresql',
-                'NAME':     config('POSTGRES_DB'),
-                'USER':     config('POSTGRES_USER', default='postgres'),
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': config('POSTGRES_DB'),
+                'USER': config('POSTGRES_USER', default='postgres'),
                 'PASSWORD': config('POSTGRES_PASSWORD', default='postgres'),
-                'HOST':     config('POSTGRES_HOST', default='db'),
-                'PORT':     config('POSTGRES_PORT', default='5432'),
+                'HOST': config('POSTGRES_HOST', default='db'),
+                'PORT': config('POSTGRES_PORT', default='5432'),
             }
         }
     else:
-        # Fallback estremo per collectstatic o test locali senza DB
         DATABASES = {
             'default': {
                 'ENGINE': 'django.db.backends.sqlite3',
@@ -126,13 +121,11 @@ if not DATABASE_URL:
 
 AUTH_USER_MODEL = 'accounts.Utente'
 LOGIN_URL = '/login/'
-
 LANGUAGE_CODE = 'it-it'
 TIME_ZONE = 'Europe/Rome'
 USE_I18N = True
 USE_L10N = True
 USE_TZ = True
-
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [

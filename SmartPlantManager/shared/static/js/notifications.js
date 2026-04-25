@@ -10,9 +10,11 @@ const NOTIF_ICONS = {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-    const btn   = document.getElementById('notif-btn');
+    const btn = document.getElementById('notif-btn');
     const panel = document.getElementById('notif-panel');
-    if (!btn || !panel) return;
+
+    if (!btn || !panel) 
+        return;
 
     btn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -32,15 +34,21 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function formatAlarmDate(lastSeenMs) {
-    if (!lastSeenMs) return '';
+    if (!lastSeenMs) 
+        return '';
+
     const d = new Date(lastSeenMs);
     const now = new Date();
     const sameDay = d.toDateString() === now.toDateString();
     const hh = String(d.getHours()).padStart(2, '0');
     const mm = String(d.getMinutes()).padStart(2, '0');
-    if (sameDay) return `${hh}:${mm}`;
+
+    if (sameDay) 
+        return `${hh}:${mm}`;
+
     const dd = String(d.getDate()).padStart(2, '0');
     const mo = String(d.getMonth() + 1).padStart(2, '0');
+
     return `${dd}/${mo} ${hh}:${mm}`;
 }
 
@@ -50,33 +58,40 @@ function computeAlarms(plantsData) {
     Object.values(plantsData)
         .sort((a, b) => (b.last_seen || 0) - (a.last_seen || 0))
         .forEach(p => {
-            const f    = formatPlant(p);
-            const th   = p.params  || {};
-            const s    = p.sensors || {};
+            const f = formatPlant(p);
+            const th = p.params || {};
+            const s = p.sensors || {};
             const date = formatAlarmDate(p.last_seen);
 
             if (!f.isOnline) {
                 alarms.push({ device_id: p.device_id, plant: f.nickname, type: 'offline',
                     msg: 'Dispositivo offline', date, lastSeen: p.last_seen || 0 });
             }
+
             if (f.tStatus === 'alarm' && s.temperature != null) {
                 const high = s.temperature > th.temp_max;
+
                 alarms.push({ device_id: p.device_id, plant: f.nickname, type: 'temperature',
                     msg: `Temp. ${high ? 'alta' : 'bassa'}: ${s.temperature.toFixed(1)}°C (${high ? 'max ' + th.temp_max : 'min ' + th.temp_min}°C)`,
                     date, lastSeen: p.last_seen || 0 });
             }
+
             if (f.hStatus === 'alarm' && s.humidity != null) {
                 const high = s.humidity > th.humidity_max;
+
                 alarms.push({ device_id: p.device_id, plant: f.nickname, type: 'humidity',
                     msg: `Umidità ${high ? 'alta' : 'bassa'}: ${s.humidity.toFixed(1)}% (${high ? 'max ' + th.humidity_max : 'min ' + th.humidity_min}%)`,
                     date, lastSeen: p.last_seen || 0 });
             }
+
             if (f.sStatus === 'alarm' && s.soil != null) {
                 const high = s.soil > th.soil_max;
+
                 alarms.push({ device_id: p.device_id, plant: f.nickname, type: 'soil',
                     msg: `Suolo ${high ? 'saturo' : 'secco'}: ${s.soil.toFixed(1)}% (${high ? 'max ' + th.soil_max : 'min ' + th.soil_min}%)`,
                     date, lastSeen: p.last_seen || 0 });
             }
+
             if (f.bStatus === 'alarm' && s.battery != null) {
                 alarms.push({ device_id: p.device_id, plant: f.nickname, type: 'battery',
                     msg: `Batteria scarica: ${Math.round(s.battery)}%`,
@@ -90,7 +105,9 @@ function computeAlarms(plantsData) {
 function renderNotifications(plantsData) {
     const badge = document.getElementById('notif-badge');
     const list  = document.getElementById('notif-list');
-    if (!badge || !list) return;
+
+    if (!badge || !list) 
+        return;
 
     const alarms = computeAlarms(plantsData);
 
@@ -104,7 +121,7 @@ function renderNotifications(plantsData) {
         return;
     }
 
-    badge.textContent   = alarms.length;
+    badge.textContent = alarms.length;
     badge.style.display = 'flex';
 
     list.innerHTML = alarms.map(a => `

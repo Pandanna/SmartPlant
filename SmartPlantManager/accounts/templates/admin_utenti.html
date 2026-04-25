@@ -22,13 +22,13 @@
     {% endfor %}
   {% endif %}
 
-  <!-- Tab bar -->
+  <!-- tab bar -->
   <div class="tab-bar">
     <button class="tab-btn active" data-tab="utenti">Utenti</button>
     <button class="tab-btn" data-tab="dispositivi">Dispositivi</button>
   </div>
 
-  <!-- ===== TAB UTENTI ===== -->
+  <!-- tab utenti -->
   <div id="tab-utenti" class="tab-content active">
     <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
       <a href="{% url 'admin_webhook' %}" class="btn btn-outline btn-sm" style="display: flex; align-items: center; gap: 6px;">
@@ -69,7 +69,7 @@
               </span>
             </td>
             <td style="text-align: center; font-family: var(--mono); font-size: 13px; color: var(--muted);">
-              {{ u.pianta_set.count }}
+              {{ u.num_piante }}
             </td>
             <td style="font-size: 12px; color: var(--muted);">{{ u.created_at|date:"d/m/Y" }}</td>
             <td>
@@ -89,10 +89,10 @@
     </div>
   </div>
 
-  <!-- ===== TAB DISPOSITIVI ===== -->
+  <!-- tab dispositivi -->
   <div id="tab-dispositivi" class="tab-content">
 
-    <!-- Header: stat cards + aggiungi -->
+    <!-- stat cards + aggiungi -->
     <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 16px; flex-wrap: wrap;">
       <div class="device-stats">
         <button class="device-stat-card active" data-filter="all">
@@ -115,12 +115,12 @@
 
       <form method="post" action="{% url 'admin_crea_dispositivo' %}" style="display: flex; gap: 8px; align-items: center; flex-shrink: 0;">
         {% csrf_token %}
-        <input type="text" name="device_id" placeholder="ID dispositivo (es. ESP_03)" style="width: 220px;" required minlength="2" maxlength="50">
+        <input type="text" name="device_id" placeholder="ID dispositivo (es. ESP-0A1B)" style="width: 220px;" required minlength="2" maxlength="50">
         <button type="submit" class="btn btn-primary btn-sm">+ Aggiungi</button>
       </form>
     </div>
 
-    <!-- Tabella dispositivi -->
+    <!-- tabella dispositivi -->
     <div class="card" style="overflow: hidden;">
       <table class="data-table">
         <thead>
@@ -219,52 +219,9 @@
       </table>
     </div>
   </div>
-
 </div>
+{% endblock %}
 
-<script>
-  // Tab switching
-  const tabBtns = document.querySelectorAll('.tab-btn');
-  const tabContents = document.querySelectorAll('.tab-content');
-
-  function switchTab(tabName) {
-    tabBtns.forEach(b => b.classList.toggle('active', b.dataset.tab === tabName));
-    tabContents.forEach(c => c.classList.toggle('active', c.id === 'tab-' + tabName));
-  }
-
-  tabBtns.forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
-
-  // Ripristina tab dopo POST redirect
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('tab') === 'dispositivi') switchTab('dispositivi');
-
-  // Mostra/nascondi PIN
-  function togglePin(id, pin) {
-    const el = document.getElementById('pin-' + id);
-    el.textContent = el.textContent === '••••••' ? pin : '••••••';
-  }
-
-  // Filtro dispositivi
-  let currentDeviceFilter = 'all';
-  document.querySelectorAll('.device-stat-card').forEach(card => {
-    card.addEventListener('click', () => {
-      const filter = card.dataset.filter;
-      currentDeviceFilter = currentDeviceFilter === filter ? 'all' : filter;
-      applyDeviceFilter();
-    });
-  });
-
-  function applyDeviceFilter() {
-    document.querySelectorAll('.device-stat-card').forEach(c =>
-      c.classList.toggle('active', c.dataset.filter === currentDeviceFilter)
-    );
-    document.querySelectorAll('.device-row').forEach(row => {
-      let show = true;
-      if (currentDeviceFilter === 'online')    show = row.dataset.online === 'true';
-      if (currentDeviceFilter === 'associati') show = row.dataset.associato === 'true';
-      if (currentDeviceFilter === 'liberi')    show = row.dataset.associato === 'false';
-      row.style.display = show ? '' : 'none';
-    });
-  }
-</script>
+{% block extra_js %}
+  <script src="{% static 'js/admin_utenti.js' %}"></script>
 {% endblock %}

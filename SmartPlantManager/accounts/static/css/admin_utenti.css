@@ -19,7 +19,6 @@
   color: var(--muted);
 }
 
-/*  Stile Tabella */
 .data-table {
   width: 100%;
   border-collapse: collapse;
@@ -52,7 +51,6 @@
   background: var(--card2);
 }
 
-/* Tab bar */
 .tab-bar {
   display: flex;
   gap: 2px;
@@ -91,7 +89,6 @@
   display: block;
 }
 
-/* Stat cards dispositivi */
 .device-stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -132,7 +129,6 @@
   letter-spacing: .04em;
 }
 
-/* PIN toggle button */
 .btn-pin-toggle {
   background: none;
   border: none;
@@ -148,7 +144,6 @@
   opacity: 1;
 }
 
-/* Messaggi di feedback Django */
 .msg-success {
   background: var(--green-d);
   border: 1px solid var(--green-b);

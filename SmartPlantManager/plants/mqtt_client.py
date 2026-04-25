@@ -27,7 +27,6 @@ def start_mqtt_listener():
                 client.subscribe("smartplant/+/+")
                 logger.info("📡 Sottoscritto a: smartplant/+/+")
             else:
-                # AWS spesso rifiuta connessioni per certificati errati o ID duplicati
                 logger.error(f"❌ Connessione MQTT fallita (Codice: {rc})")
 
         def on_message(client, userdata, msg):
@@ -36,20 +35,26 @@ def start_mqtt_listener():
                 logger.info(f"📩 MQTT Ricevuto: {msg.topic} -> {payload_str}")
 
                 parts = msg.topic.split('/')
-                if len(parts) < 3: return
+
+                if len(parts) < 3: 
+                    return
                 
                 device_id = parts[1]
                 sensor_type = parts[2]
                 
-                if sensor_type in ('config', 'irrigate'): return
+                if sensor_type in ('config', 'irrigate'): 
+                    return
 
                 try:
                     data = json.loads(payload_str)
+
                     if isinstance(data, dict):
                         for key in ['temperature', 'humidity', 'soil', 'light', 'battery', 'rain']:
-                            if key in data: process_sensor_data(device_id, key, data[key])
+                            if key in data: 
+                                process_sensor_data(device_id, key, data[key])
                     else:
                         process_sensor_data(device_id, sensor_type, data)
+
                 except json.JSONDecodeError:
                     process_sensor_data(device_id, sensor_type, payload_str)
 
@@ -58,7 +63,6 @@ def start_mqtt_listener():
 
         # Inizializzazione Client
         try:
-            # Supporto versione 2 di paho-mqtt
             if hasattr(mqtt, 'CallbackAPIVersion'):
                 client = mqtt.Client(callback_api_version=mqtt.CallbackAPIVersion.VERSION2, client_id=client_id)
             else:
@@ -66,8 +70,6 @@ def start_mqtt_listener():
                 
             client.on_connect = on_connect
             client.on_message = on_message
-
-            # Percorsi configurabili (Default locale: /certs/)
             certs_path = os.getenv('MQTT_CERTS_PATH', '/certs/')
 
             client.tls_set(
@@ -81,6 +83,7 @@ def start_mqtt_listener():
             logger.info(f"🔗 Connessione a AWS IoT: {settings.AWS_IOT_ENDPOINT}:{settings.AWS_IOT_PORT}...")
             client.connect(settings.AWS_IOT_ENDPOINT, int(settings.AWS_IOT_PORT), keepalive=60)
             client.loop_forever()
+
         except Exception as e:
             logger.error(f"💀 Errore fatale Loop MQTT: {e}\n{traceback.format_exc()}")
 
@@ -92,6 +95,7 @@ def start_mqtt_listener():
                 run_auto_irrigation_check()
             except Exception as e:
                 logger.error(f"⏱️ Errore timer irrigazione: {e}")
+                
             time.sleep(3600)
 
     # Avvio thread daemon
