@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %} — Registra Pianta{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/registra.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="wizard-container">
+  <a href="{% url 'home' %}" class="btn btn-ghost btn-sm btn-back">← Torna alla Dashboard</a>
+  
+  <div class="wizard-title">Registra nuova pianta</div>
+  <div class="wizard-subtitle">Il sistema identifica automaticamente la specie e configura i parametri.</div>
+
+  <div class="progress-wrap" id="progress-bar">
+    <div class="step-indicator" id="ind-1">
+      <div class="step-dot active" id="dot-1">1</div>
+      <span class="step-label active" id="lbl-1">Dispositivo</span>
+    </div>
+    <div class="step-line" id="line-1"></div>
+    
+    <div class="step-indicator" id="ind-2">
+      <div class="step-dot" id="dot-2">2</div>
+      <span class="step-label" id="lbl-2">Foto</span>
+    </div>
+    <div class="step-line" id="line-2"></div>
+    
+    <div class="step-indicator" id="ind-3">
+      <div class="step-dot" id="dot-3">3</div>
+      <span class="step-label" id="lbl-3">Conferma</span>
+    </div>
+    <div class="step-line" id="line-3"></div>
+    
+    <div class="step-indicator" id="ind-4">
+      <div class="step-dot" id="dot-4">4</div>
+      <span class="step-label" id="lbl-4">Risultato</span>
+    </div>
+  </div>
+
+  <input type="file" id="file-input" accept="image/*" capture="environment" style="display:none">
+
+  <div class="card card-p fade-up step active" id="step-1">
+    <div class="step-title">Configura la pianta</div>
+    
+    <div style="margin-bottom: 12px;">
+      <label>ID Dispositivo (ESP32)</label>
+      <input type="text" id="device-id-input" placeholder="es. ESP_01" maxlength="50">
+    </div>
+
+    <div style="margin-bottom: 12px;">
+      <label>PIN Dispositivo (6 cifre)</label>
+      <input type="text" id="device-pin-input" placeholder="es. 123456" maxlength="6">
+    </div>
+    
+    <div style="margin-bottom: 18px;">
+      <label>Nome della pianta</label>
+      <input type="text" id="nickname-input" placeholder="es. Ficus del salotto" maxlength="40">
+    </div>
+
+    <div id="step1-error" style="color: var(--red); font-size: 13px; margin-bottom: 10px; display: none; background: #fee2e2; padding: 8px; border-radius: 6px; border: 1px solid #fca5a5;"></div>
+    
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <button class="btn btn-primary" id="btn-next-1" disabled style="justify-content: center;" onclick="validaStep1(false)">Continua</button>
+      <button class="btn btn-outline" id="btn-manual-1" disabled style="justify-content: center;" onclick="validaStep1(true)">Inserisci manualmente</button>
+    </div>
+  </div>
+
+  <div class="card card-p fade-up step" id="step-2">
+    <div class="step-title">Fotografa la pianta</div>
+    
+    <div class="preview-box" id="preview-box" onclick="document.getElementById('file-input').click()">
+      <div class="preview-placeholder" id="placeholder">
+        <div style="font-size: 28px; margin-bottom: 8px;">📷</div>
+        <span style="font-size: 13px; color: var(--muted);">Tocca per scattare</span>
+        <span style="font-size: 11px; color: var(--hint);">Usa luce naturale per risultati migliori</span>
+      </div>
+      <img id="preview-img" alt="Anteprima pianta">
+    </div>
+    
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <button class="btn btn-primary" id="btn-next-2" disabled style="justify-content: center;" onclick="goToStep(3)">Continua</button>
+      <button class="btn btn-outline" style="justify-content: center;" onclick="goToStep(1)">← Indietro</button>
+    </div>
+  </div>
+
+  <div class="card card-p fade-up step" id="step-3">
+    <div class="step-title">Conferma</div>
+    
+    <div class="summary-box">
+      <div class="summary-row"><span class="k">Dispositivo</span><span class="v" id="sum-device">—</span></div>
+      <div class="summary-row"><span class="k">Nome</span><span class="v" id="sum-nickname">—</span></div>
+      <div class="summary-row"><span class="k">Foto</span><span class="v">Acquisita</span></div>
+    </div>
+    
+    <div style="display: flex; gap: 8px;">
+      <button class="btn btn-outline" style="flex: 1; justify-content: center;" onclick="goToStep(2)">← Indietro</button>
+      <button class="btn btn-primary" style="flex: 1; justify-content: center;" onclick="startAnalysis()">Analizza e registra</button>
+    </div>
+  </div>
+
+  <div class="card card-p fade-up step" id="step-loading" style="text-align: center; padding: 2.5rem;">
+    <div style="font-family: var(--serif); font-size: 1.1rem; margin-bottom: 8px;">Identificazione in corso...</div>
+    <div style="font-size: 13px; color: var(--muted); margin-bottom: 18px;" id="loading-label">Analisi con Plant.id · Recupero parametri</div>
+    <div style="height: 3px; background: var(--surface); border-radius: 2px; overflow: hidden;">
+      <div class="progress-bar-fill"></div>
+    </div>
+  </div>
+
+  <div class="card card-p fade-up step" id="step-result">
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px;">
+      <div style="width: 40px; height: 40px; border-radius: 10px; background: var(--green-d); display: flex; align-items: center; justify-content: center; font-size: 20px;">🌿</div>
+      <div>
+        <div style="font-family: var(--serif); font-size: 1.1rem;" id="res-common">—</div>
+        <div style="font-size: 11px; font-style: italic; color: var(--muted);" id="res-scientific">—</div>
+        <span class="badge badge-green" style="margin-top: 3px;" id="res-confidence">—</span>
+      </div>
+    </div>
+    
+    <div class="divider" style="margin: 12px 0;"></div>
+    <div style="font-size: 11px; font-weight: 500; color: var(--muted); margin-bottom: 10px; text-transform: uppercase; letter-spacing: .05em;">Parametri configurati automaticamente</div>
+    
+    <div class="params-grid">
+      <div class="param-card"><div class="k">Temp. min</div><div class="v" id="res-tmin">—</div></div>
+      <div class="param-card"><div class="k">Temp. max</div><div class="v" id="res-tmax">—</div></div>
+      <div class="param-card"><div class="k">Umidità min</div><div class="v" id="res-hmin">—</div></div>
+      <div class="param-card"><div class="k">Umidità max</div><div class="v" id="res-hmax">—</div></div>
+      <div class="param-card"><div class="k">Suolo min</div><div class="v" id="res-smin">—</div></div>
+      <div class="param-card"><div class="k">Luce</div><div class="v" id="res-sun">—</div></div>
+    </div>
+    
+    <div class="success-note">✓ Parametri inviati al dispositivo · Notifica Telegram inviata</div>
+    
+    <div style="display: flex; gap: 8px;">
+      <a href="{% url 'home' %}" class="btn btn-primary" style="flex: 1; justify-content: center; text-decoration: none;">Vai alla dashboard</a>
+      <button class="btn btn-outline" style="flex: 1; justify-content: center;" onclick="resetAll()">Aggiungi un'altra</button>
+    </div>
+  </div>
+
+  <div class="card card-p fade-up step" id="step-error" style="text-align: center; padding: 2rem;">
+    <div style="font-size: 2rem; margin-bottom: 10px;">⚠️</div>
+    <h3 style="color: var(--red); font-family: var(--serif); font-size: 1.2rem; margin-bottom: 6px;">Operazione fallita</h3>
+    <p id="error-msg" style="font-size: 13px; color: var(--muted); margin-bottom: 16px;">Errore durante l'analisi.</p>
+    <button class="btn btn-primary" style="margin-bottom: 8px; justify-content: center;" onclick="goToManual()">Inserisci manualmente</button>
+    <button class="btn btn-outline" style="justify-content: center;" onclick="goToStep(2)">Riprova con la foto</button>
+  </div>
+
+  <div class="card card-p fade-up step" id="step-manual">
+    <div class="step-title">Inserisci manualmente</div>
+    <div style="font-size: 13px; color: var(--muted); margin-bottom: 16px;">Inserisci i parametri della pianta senza riconoscimento automatico.</div>
+    
+    <div class="preview-box" id="m-preview-box" onclick="document.getElementById('file-input').click()">
+      <div class="preview-placeholder" id="m-placeholder">
+        <div style="font-size: 24px; margin-bottom: 4px;">📷</div>
+        <span style="font-size: 12px; color: var(--muted);">Foto opzionale</span>
+      </div>
+      <img id="m-preview-img" alt="Anteprima pianta">
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div>
+        <label>Nome specie / comune</label>
+        <input type="text" id="m-common" placeholder="es. Ficus, Pothos, Basilico">
+      </div>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div><label>Temp. min (°C)</label><input type="number" id="m-tmin" value="15"></div>
+        <div><label>Temp. max (°C)</label><input type="number" id="m-tmax" value="30"></div>
+        <div><label>Umidità aria min (%)</label><input type="number" id="m-hmin" value="35"></div>
+        <div><label>Umidità aria max (%)</label><input type="number" id="m-hmax" value="60"></div>
+        <div><label>Umidità suolo min (%)</label><input type="number" id="m-smin" value="30"></div>
+        <div><label>Umidità suolo max (%)</label><input type="number" id="m-smax" value="80"></div>
+      </div>
+      
+      <div>
+        <label>Esposizione</label>
+        <select id="m-sun" class="full-select">
+          <option value="full sun">Luce diretta</option>
+          <option value="part shade" selected>Parziale</option>
+          <option value="full shade">Ombra</option>
+        </select>
+      </div>
+      
+      <div>
+        <label>Frequenza irrigazione</label>
+        <select id="m-water" class="full-select">
+          <option value="frequent">Frequente</option>
+          <option value="average" selected>Moderata</option>
+          <option value="minimum">Scarsa</option>
+          <option value="none">Minima</option>
+        </select>
+      </div>
+      
+      <div style="display: flex; gap: 8px; margin-top: 4px;">
+        <button class="btn btn-outline" style="flex: 1; justify-content: center;" onclick="goToStep(1)">← Indietro</button>
+        <button class="btn btn-primary" style="flex: 1; justify-content: center;" onclick="submitManual()">Registra pianta</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block js_config %}
+     data-url-valida="{% url 'valida_dispositivo' %}"
+     data-url-analizza="{% url 'registra_analizza' %}"
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'js/registra.js' %}"></script>
+{% endblock %}

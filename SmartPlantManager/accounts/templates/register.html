@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %} — Crea account{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/accounts.css' %}">
+  <link rel="stylesheet" href="{% static 'css/register.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+  <div class="fade-up card register-card">
+    
+    <a href="{% url 'login' %}" class="btn btn-ghost btn-sm back-btn">← Torna al login</a>
+
+    <div class="register-header">
+      <div class="title">Crea account</div>
+      <div class="subtitle">Registrati per monitorare le tue piante.</div>
+    </div>
+
+    <form method="post" class="register-form">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="error-box">
+          {% for error in form.non_field_errors %}{{ error }}<br>{% endfor %}
+        </div>
+      {% endif %}
+
+      <div class="field-group">
+        <label for="{{ form.username.id_for_label }}">Username <span class="text-red">*</span></label>
+        <input type="text" name="{{ form.username.name }}" id="{{ form.username.id_for_label }}" placeholder="MarioRossi" autocomplete="username" autofocus required>
+        {% if form.username.errors %}<div class="field-err">{{ form.username.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div class="field-group">
+        <label for="{{ form.email.id_for_label }}">Email <span class="text-red">*</span></label>
+        <input type="email" name="{{ form.email.name }}" id="{{ form.email.id_for_label }}" placeholder="nome@email.it" autocomplete="email" required>
+        {% if form.email.errors %}<div class="field-err">{{ form.email.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div class="field-group">
+        <label for="{{ form.password1.id_for_label }}">Password <span class="text-red">*</span></label>
+        <input type="password" name="{{ form.password1.name }}" id="{{ form.password1.id_for_label }}" placeholder="Min. 8 caratteri" autocomplete="new-password" oninput="strength(this.value)" required>
+        
+        <div class="strength-container" style="display: none;" id="strength-box">
+          <div class="strength-bars">
+            <div class="strength-bar" id="bar-1"></div>
+            <div class="strength-bar" id="bar-2"></div>
+            <div class="strength-bar" id="bar-3"></div>
+            <div class="strength-bar" id="bar-4"></div>
+          </div>
+          <div class="strength-label" id="sl"></div>
+        </div>
+        
+        {% if form.password1.errors %}<div class="field-err">{{ form.password1.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div class="field-group">
+        <label for="{{ form.password2.id_for_label }}">Conferma password <span class="text-red">*</span></label>
+        <input type="password" name="{{ form.password2.name }}" id="{{ form.password2.id_for_label }}" placeholder="Ripeti la password" autocomplete="new-password" required>
+        {% if form.password2.errors %}<div class="field-err">{{ form.password2.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div class="field-group">
+        <label for="{{ form.telegram.id_for_label }}">Username Telegram</label>
+        <input type="text" name="{{ form.telegram.name }}" id="{{ form.telegram.id_for_label }}" placeholder="@username">
+        {% if form.telegram.errors %}<div class="field-err">{{ form.telegram.errors.0 }}</div>{% endif %}
+        <div class="hint">Necessario per ricevere notifiche di allarme</div>
+      </div>
+
+      <button type="submit" class="btn btn-primary submit-btn">Registrati</button>
+
+      <div class="login-links center">
+        <span style="color: var(--muted);">Hai già un account?</span> 
+        <a href="{% url 'login' %}" class="btn btn-ghost btn-sm text-green inline-btn">Accedi</a>
+      </div>
+    </form>
+    
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'js/register.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %} — Pannello Admin{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'css/admin_utenti.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="admin-container fade-up">
+
+  <div class="admin-header">
+    <div>
+      <div class="admin-title">Pannello admin</div>
+      <div class="admin-subtitle">Gestione utenti e dispositivi.</div>
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="msg-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- tab bar -->
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="utenti">Utenti</button>
+    <button class="tab-btn" data-tab="dispositivi">Dispositivi</button>
+  </div>
+
+  <!-- tab utenti -->
+  <div id="tab-utenti" class="tab-content active">
+    <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
+      <a href="{% url 'admin_webhook' %}" class="btn btn-outline btn-sm" style="display: flex; align-items: center; gap: 6px;">
+        <span>⚡</span> Configura Webhook Telegram
+      </a>
+    </div>
+
+    <div class="card" style="overflow: hidden;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Utente</th>
+            <th>Email</th>
+            <th>Ruolo</th>
+            <th style="text-align: center;">Piante</th>
+            <th>Registrato</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in utenti %}
+          <tr>
+            <td>
+              <div style="font-weight: 500; font-size: 13px;">
+                {{ u.username }}
+                {% if u.username == request.user.username %}
+                  <span style="font-weight: 400; color: var(--muted);">(tu)</span>
+                {% endif %}
+              </div>
+              <div style="font-size: 11px; margin-top: 2px; color: {% if u.telegram %}var(--hint){% else %}var(--amber){% endif %};">
+                {% if u.telegram %}{{ u.telegram }}{% else %}Telegram non configurato{% endif %}
+              </div>
+            </td>
+            <td style="font-family: var(--mono); font-size: 12px; color: var(--muted);">{{ u.email }}</td>
+            <td>
+              <span class="badge {% if u.is_admin %}badge-amber{% else %}badge-green{% endif %}">
+                {% if u.is_admin %}Admin{% else %}Utente{% endif %}
+              </span>
+            </td>
+            <td style="text-align: center; font-family: var(--mono); font-size: 13px; color: var(--muted);">
+              {{ u.num_piante }}
+            </td>
+            <td style="font-size: 12px; color: var(--muted);">{{ u.created_at|date:"d/m/Y" }}</td>
+            <td>
+              {% if u.username != request.user.username %}
+              <form method="post" action="{% url 'admin_elimina_utente' %}" style="margin: 0;"
+                    onsubmit="return confirm('Sei sicuro di voler eliminare {{ u.username }} e tutte le sue piante? L\'operazione è irreversibile.');">
+                {% csrf_token %}
+                <input type="hidden" name="username" value="{{ u.username }}">
+                <button type="submit" class="btn btn-danger btn-sm" style="font-size: 11px; padding: 4px 8px;">Elimina</button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- tab dispositivi -->
+  <div id="tab-dispositivi" class="tab-content">
+
+    <!-- stat cards + aggiungi -->
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 16px; flex-wrap: wrap;">
+      <div class="device-stats">
+        <button class="device-stat-card active" data-filter="all">
+          <div class="device-stat-val">{{ stats.totale }}</div>
+          <div class="device-stat-lbl">Totale</div>
+        </button>
+        <button class="device-stat-card" data-filter="online">
+          <div class="device-stat-val">{{ stats.online }}</div>
+          <div class="device-stat-lbl">Online</div>
+        </button>
+        <button class="device-stat-card" data-filter="associati">
+          <div class="device-stat-val">{{ stats.associati }}</div>
+          <div class="device-stat-lbl">Associati</div>
+        </button>
+        <button class="device-stat-card" data-filter="liberi">
+          <div class="device-stat-val">{{ stats.liberi }}</div>
+          <div class="device-stat-lbl">Liberi</div>
+        </button>
+      </div>
+
+      <form method="post" action="{% url 'admin_crea_dispositivo' %}" style="display: flex; gap: 8px; align-items: center; flex-shrink: 0;">
+        {% csrf_token %}
+        <input type="text" name="device_id" placeholder="ID dispositivo (es. ESP-0A1B)" style="width: 220px;" required minlength="2" maxlength="50">
+        <button type="submit" class="btn btn-primary btn-sm">+ Aggiungi</button>
+      </form>
+    </div>
+
+    <!-- tabella dispositivi -->
+    <div class="card" style="overflow: hidden;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Dispositivo</th>
+            <th>PIN</th>
+            <th>Proprietario</th>
+            <th>Pianta</th>
+            <th>Stato</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in dispositivi %}
+          <tr class="device-row"
+              data-online="{% if d.is_online %}true{% else %}false{% endif %}"
+              data-associato="{% if d.ha_pianta %}true{% else %}false{% endif %}">
+            <td style="font-family: var(--mono); font-size: 13px; font-weight: 500;">
+              {{ d.obj.device_id }}
+            </td>
+
+            <td>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span class="pin-display" id="pin-{{ forloop.counter }}" style="font-family: var(--mono); font-size: 13px; letter-spacing: .1em;">••••••</span>
+                <button class="btn-pin-toggle" onclick="togglePin('{{ forloop.counter }}', '{{ d.obj.pin }}')" title="Mostra/nascondi PIN">
+                  👁
+                </button>
+              </div>
+            </td>
+
+            <td style="font-size: 13px; color: var(--muted);">
+              {% if d.ha_pianta %}
+                {{ d.pianta.utente.username }}
+              {% else %}
+                <span style="color: var(--hint);">—</span>
+              {% endif %}
+            </td>
+
+            <td style="font-size: 13px;">
+              {% if d.ha_pianta %}
+                <div style="font-weight: 500;">{{ d.pianta.nickname }}</div>
+                <div style="font-size: 11px; font-style: italic; color: var(--muted);">{{ d.pianta.species }}</div>
+              {% else %}
+                <span class="badge" style="background: var(--surface); color: var(--hint); border: 1px solid var(--border);">Disponibile</span>
+              {% endif %}
+            </td>
+
+            <td>
+              {% if d.obj.last_seen %}
+                <div style="display: flex; align-items: center; gap: 5px;">
+                  <div class="dot" style="width:7px; height:7px; border-radius:50%; flex-shrink:0;
+                    background: {% if d.is_online %}var(--green){% else %}var(--red){% endif %};
+                    {% if d.is_online %}animation: pulse-dot 2s infinite;{% endif %}">
+                  </div>
+                  <div>
+                    <div style="font-size: 12px; color: {% if d.is_online %}var(--green){% else %}var(--red){% endif %};">
+                      {% if d.is_online %}Online{% else %}Offline{% endif %}
+                    </div>
+                    <div style="font-size: 11px; color: var(--hint);">{{ d.time_ago }}</div>
+                  </div>
+                </div>
+              {% else %}
+                <span style="font-size: 12px; color: var(--hint);">Mai connesso</span>
+              {% endif %}
+            </td>
+
+            <td>
+              <div style="display: flex; gap: 6px; justify-content: flex-end;">
+                <form method="post" action="{% url 'admin_rigenera_pin' %}" style="margin: 0;">
+                  {% csrf_token %}
+                  <input type="hidden" name="device_id" value="{{ d.obj.device_id }}">
+                  <button type="submit" class="btn btn-outline btn-sm" style="font-size: 11px; padding: 4px 8px;">
+                    Rigenera PIN
+                  </button>
+                </form>
+                {% if not d.ha_pianta %}
+                <form method="post" action="{% url 'admin_elimina_dispositivo' %}" style="margin: 0;"
+                      onsubmit="return confirm('Eliminare il dispositivo {{ d.obj.device_id }}?');">
+                  {% csrf_token %}
+                  <input type="hidden" name="device_id" value="{{ d.obj.device_id }}">
+                  <button type="submit" class="btn btn-danger btn-sm" style="font-size: 11px; padding: 4px 8px;">Elimina</button>
+                </form>
+                {% endif %}
+              </div>
+            </td>
+
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" style="text-align: center; padding: 2rem; color: var(--muted); font-size: 13px;">
+              Nessun dispositivo registrato.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'js/admin_utenti.js' %}"></script>
+{% endblock %}

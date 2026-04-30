@@ -1,0 +1,445 @@
+import json
+import logging
+import os
+import requests
+from django.conf import settings
+from django.utils import timezone
+from django.db import connection
+import paho.mqtt.publish as publish
+import ssl
+from .telegram import send_telegram_message
+from datetime import timedelta
+from .models import Dispositivo, Pianta, IrrigazioneLog, PlantCareCache
+from .telegram import send_telegram_message
+import datetime
+
+logger = logging.getLogger(__name__)
+
+def to_bool(val):
+    if isinstance(val, bool): return val
+    if isinstance(val, (int, float)): return bool(val)
+    if isinstance(val, str):
+        v = val.lower().strip()
+        if v in ('true', '1', 'yes', 'on', 'sì'): return True
+        if v in ('false', '0', 'no', 'off'): return False
+    return False
+
+def check_and_send_alarms(pianta):
+    """
+    Controlla se i valori dei sensori sono fuori soglia e invia notifica Telegram.
+    """
+
+    # Verifica se l'utente ha Telegram configurato
+    if not hasattr(pianta.utente, 'telegram_chat_id') or not pianta.utente.telegram_chat_id:
+        return
+        
+    # non invia più di un allarme ogni ora per la stessa pianta
+    if pianta.last_alarm_sent and (timezone.now() - pianta.last_alarm_sent) < timedelta(hours=1):
+        return
+        
+    d = pianta.dispositivo
+    allarme = None
+    
+    # 1. Temperatura
+    if d.last_temp is not None:
+        if d.last_temp > pianta.temp_max:
+            allarme = f"Temperatura alta: {d.last_temp}°C (max {pianta.temp_max}°C)"
+        elif d.last_temp < pianta.temp_min:
+            allarme = f"Temperatura bassa: {d.last_temp}°C (min {pianta.temp_min}°C)"
+            
+    # 2. Umidità Aria
+    if not allarme and d.last_hum is not None:
+        if d.last_hum > pianta.humidity_max:
+            allarme = f"Umidità aria alta: {d.last_hum}% (max {pianta.humidity_max}%)"
+        elif d.last_hum < pianta.humidity_min:
+            allarme = f"Umidità aria bassa: {d.last_hum}% (min {pianta.humidity_min}%)"
+
+    # 3. Umidità Suolo
+    if not allarme and d.last_soil is not None:
+        if d.last_soil > pianta.soil_max:
+            allarme = f"Umidità suolo alta: {d.last_soil}% (max {pianta.soil_max}%)"
+        elif d.last_soil < pianta.soil_min:
+            allarme = f"Umidità suolo bassa: {d.last_soil}% (min {pianta.soil_min}%)"
+            
+    # 4. Batteria
+    if not allarme and d.last_battery is not None and d.last_battery < 20:
+        allarme = f"Batteria scarica: {d.last_battery}%"
+        
+    if allarme:
+        msg = f"⚠️ *Allarme {pianta.nickname}*\n{allarme}"
+        if send_telegram_message(pianta.utente.telegram_chat_id, msg):
+            pianta.last_alarm_sent = timezone.now()
+            pianta.save(update_fields=['last_alarm_sent'])
+            logger.info(f"Notifica Telegram inviata per {pianta.nickname}")
+
+def process_sensor_data(device_id, sensor_type, value):
+    """
+    Riceve un dato, aggiorna Dispositivo e Pianta, gestisce lo storico e gli allarmi.
+    """
+
+    try:
+        if connection.connection and not connection.is_usable():
+            connection.close()
+
+        dispositivo, created = Dispositivo.objects.get_or_create(device_id=device_id.strip().lower())
+    
+        mapping = {
+            'temp': 'temperature', 'temperature': 'temperature',
+            'hum': 'humidity', 'humidity': 'humidity',
+            'soil': 'soil', 'moisture': 'soil',
+            'light': 'light', 'lux': 'light',
+            'batt': 'battery', 'battery': 'battery',
+            'rain': 'rain', 'water': 'rain'
+        }
+        
+        real_type = mapping.get(sensor_type.lower())
+
+        if not real_type:
+            logger.warning(f"\nTipo sensore sconosciuto: {sensor_type}")
+            return False
+
+        try:
+            if real_type == 'temperature': dispositivo.last_temp = float(value)
+            elif real_type == 'humidity': dispositivo.last_hum = float(value)
+            elif real_type == 'soil': dispositivo.last_soil = float(value)
+            elif real_type == 'light': dispositivo.last_light = float(value)
+            elif real_type == 'battery': dispositivo.last_battery = float(value)
+            elif real_type == 'rain': dispositivo.last_rain = to_bool(value)
+
+        except (ValueError, TypeError):
+            logger.error(f"\nValore non valido per {real_type}: {value}")
+            return False
+        
+        dispositivo.last_seen = timezone.now()
+
+        history = dispositivo.history if isinstance(dispositivo.history, list) else []
+        history.append({
+            'ts': int(timezone.now().timestamp() * 1000),
+            'temperature': dispositivo.last_temp,
+            'humidity': dispositivo.last_hum,
+            'soil': dispositivo.last_soil,
+            'light': dispositivo.last_light,
+            'battery': dispositivo.last_battery,
+            'rain': dispositivo.last_rain
+        })
+        
+        dispositivo.history = history[-2000:]
+        dispositivo.save()
+
+        # Sincronizza con la Pianta associata
+        try:
+            p = Pianta.objects.get(dispositivo=dispositivo)
+            p.last_temperature = dispositivo.last_temp
+            p.last_humidity = dispositivo.last_hum
+            p.last_light = dispositivo.last_light
+            p.last_soil = dispositivo.last_soil
+            p.last_battery = dispositivo.last_battery
+            p.last_seen = dispositivo.last_seen
+            p.save(update_fields=['last_temperature', 'last_humidity', 'last_light', 'last_soil', 'last_battery', 'last_seen'])
+            
+            # Controlla allarmi
+            check_and_send_alarms(p)
+            logger.info(f"✅ Dati {real_type} salvati per {device_id}")
+
+        except Pianta.DoesNotExist:
+            logger.debug(f"Dispositivo {device_id} aggiornato (nessuna pianta associata)")
+            
+        return True
+    except Exception as e:
+        logger.error(f"❌ Errore process_sensor_data ({device_id}, {sensor_type}): {e}")
+        return False
+    # finally:
+    #     connection.close()
+
+def run_auto_irrigation_check():
+    """
+    Timer orario per irrigazione automatica.
+    """
+
+    if connection.connection and not connection.is_usable():
+        connection.close()
+
+    try:
+        WATERING_DAYS = {'frequent': 2, 'average': 4, 'minimum': 7, 'none': 14}
+        piante = Pianta.objects.filter(auto_irrigation=True).select_related('dispositivo', 'utente')
+        
+        for p in piante:
+            days = WATERING_DAYS.get(p.watering, 4)
+            last_ts = p.last_irrigation or timezone.make_aware(datetime.datetime.min)
+            elapsed = (timezone.now() - last_ts).total_seconds() / 86400
+
+            if elapsed >= days:
+                publish_irrigazione(p.dispositivo.device_id, 30)
+                p.last_irrigation = timezone.now()
+                p.save(update_fields=['last_irrigation'])
+                IrrigazioneLog.objects.create(pianta=p, duration=30, trigger='automatica')
+
+                if p.utente.telegram_chat_id:
+                    msg = f"🤖 *Irrigazione automatica*\n🪴 {p.nickname}\n⏱️ Durata: 30s"
+                    send_telegram_message(p.utente.telegram_chat_id, msg)
+    finally:
+        connection.close()
+
+def publish_mqtt(topic: str, payload: dict, qos: int = 1, retain: bool = False):
+    certs_path = os.getenv('MQTT_CERTS_PATH', '/certs/')
+
+    try:
+        publish.single(
+            topic = topic, payload = json.dumps(payload), qos = qos, retain = retain,
+            hostname = settings.AWS_IOT_ENDPOINT, port = settings.AWS_IOT_PORT,
+            tls = {
+                'ca_certs': os.path.join(certs_path, 'rootCA.pem'),
+                'certfile': os.path.join(certs_path, 'device.crt'),
+                'keyfile': os.path.join(certs_path, 'private.key'),
+                'tls_version': ssl.PROTOCOL_TLSv1_2,
+                'cert_reqs': ssl.CERT_REQUIRED,
+            }
+        )
+    except Exception as e:
+        logger.error(f"Errore MQTT publish: {e}")
+
+def publish_irrigazione(device_id: str, duration: int):
+    """Richiesta irrigazione via AWS Shadow (stato desired)"""
+    topic = f"$aws/things/{device_id}/shadow/update"
+    payload = {
+        "state": {
+            "desired": {
+                "pump": True,
+                "duration": duration
+            }
+        }
+    }
+
+    publish_mqtt(topic, payload)
+    logger.info(f"Comando pump:True inviato alla shadow di {device_id}")
+
+def publish_config(device_id: str, params: dict):
+    """Aggiornamento soglie via AWS Shadow (stato desired)"""
+    topic = f"$aws/things/{device_id}/shadow/update"
+    payload = {
+        "state": {
+            "desired": params
+        }
+    }
+
+    publish_mqtt(topic, payload)
+    logger.info(f"Nuove soglie inviate alla shadow di {device_id}")
+
+def publish_event(event_type: str, payload: dict):
+    """Evento generico per servizi esterni"""
+    publish_mqtt(f"smartplant/events/{event_type}", payload, retain=False)
+
+def plantid_identify(image_base64: str) -> dict:
+    # rimuvoe il prefisso data:image/...;base64
+
+    if ',' in image_base64:
+        image_base64 = image_base64.split(',', 1)[1]
+
+    api_key = settings.PLANTID_API_KEY
+
+    if not api_key:
+        logger.error("PLANTID_API_KEY non configurata nei settings.")
+        raise ValueError("Servizio di identificazione non configurato (API Key mancante).")
+
+    url = 'https://plant.id/api/v3/identification?details=common_names'
+
+    try:
+        resp = requests.post(
+            url,
+            headers={'Api-Key': api_key},
+            json={'images': [image_base64]},
+            timeout=30
+        )
+
+    except requests.exceptions.Timeout:
+        logger.error("Timeout durante la chiamata a Plant.id")
+        raise ValueError("Il servizio di identificazione ha impiegato troppo tempo a rispondere. Prova con un'immagine più leggera.")
+    
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Errore di rete durante la chiamata a Plant.id: {e}")
+        raise ValueError("Impossibile connettersi al servizio di identificazione. Controlla la tua connessione.")
+
+    if resp.status_code == 401 or resp.status_code == 403:
+        logger.error(f"Errore autenticazione Plant.id: {resp.status_code} - {resp.text}")
+        raise ValueError("Errore di configurazione del servizio (API Key non valida).")
+    
+    elif resp.status_code == 429:
+        logger.warning("Limite di richieste raggiunto per Plant.id")
+        raise ValueError("Limite di richieste giornaliere raggiunto per il servizio gratuito.")
+    
+    elif resp.status_code not in (200, 201):
+        logger.error(f"Plant.id errore {resp.status_code}: {resp.text}")
+        raise ValueError(f"Il servizio di identificazione ha restituito un errore tecnico ({resp.status_code}).")
+    
+    try:
+        data = resp.json()
+    except Exception as e:
+        logger.error(f"Errore nel parsing JSON della risposta Plant.id: {e}")
+        raise ValueError("Risposta non valida dal servizio di identificazione.")
+
+    result = data.get('result', {})
+
+    if not result:
+        logger.error(f"Risposta Plant.id senza campo 'result': {data}")
+        raise ValueError("Dati non trovati nella risposta del servizio.")
+
+    # Controlla se è effettivamente una pianta
+    is_plant_data = result.get('is_plant', {})
+
+    if is_plant_data.get('binary') is False: 
+        raise ValueError("L'immagine fornita non sembra contenere una pianta. Prova a scattare una foto più chiara.")
+    
+    classification = result.get('classification', {})
+    suggestions = classification.get('suggestions', [])
+
+    if not suggestions: 
+        raise ValueError("Pianta non riconosciuta. Prova con un'altra angolazione o una foto più ravvicinata.")
+    
+    best = suggestions[0]
+
+    # Se la confidenza è troppo bassa (sotto il 10%) consideriamola non riconosciuta
+    if best.get('probability', 0) < 0.10:
+        raise ValueError("La qualità della foto è troppo bassa per un riconoscimento certo. Prova a scattare una foto più nitida.")
+
+    confidence = round(best['probability'] * 100)
+    species = best['name']
+    details = best.get('details', {})
+    common_names = details.get('common_names', [])
+    common_name = common_names[0] if common_names else species
+    care_params = openplantbook_get_care(species)
+
+    return {
+        'species': species,
+        'common_name': common_name,
+        'confidence': confidence,
+        'params': care_params,
+    }
+
+
+def openplantbook_get_care(species_name: str) -> dict:
+    """
+    Cerca la specie su Open Plantbook e restituisce i parametri.
+    Controlla prima la cache locale prima di fare la chiamata API.
+    """
+    pid = species_name.lower()
+
+    # Controlla cache locale
+    cached = PlantCareCache.objects.filter(pid=pid).first()
+    if cached:
+        logger.info(f"Cache hit per '{pid}'")
+        return cached.to_dict()
+
+    client_id = settings.OPENPLANTBOOK_CLIENT_ID
+    client_secret = settings.OPENPLANTBOOK_CLIENT_SECRET
+
+    if not client_id or not client_secret:
+        logger.error("OPENPLANTBOOK_CLIENT_ID/SECRET non configurati nei settings.")
+        raise ValueError("Servizio parametri non configurato (credenziali mancanti).")
+
+    base = 'https://open.plantbook.io/api/v1'
+
+    # ottiene token OAuth2
+    try:
+        token_resp = requests.post(
+            f'{base}/token/',
+            data={'grant_type': 'client_credentials', 'client_id': client_id, 'client_secret': client_secret},
+            timeout=15,
+        )
+
+    except requests.exceptions.Timeout:
+        logger.error("Timeout durante l'autenticazione Open Plantbook")
+        raise ValueError("Il servizio parametri ha impiegato troppo tempo a rispondere. Riprova.")
+    
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Errore di rete Open Plantbook (token): {e}")
+        raise ValueError("Impossibile connettersi al servizio parametri. Controlla la connessione.")
+
+    if token_resp.status_code not in (200, 201):
+        logger.error(f"Open Plantbook token errore {token_resp.status_code}: {token_resp.text}")
+        raise ValueError("Errore di autenticazione con il servizio parametri.")
+
+    token = token_resp.json().get('access_token')
+
+    if not token:
+        logger.error("Open Plantbook: access_token mancante nella risposta")
+        raise ValueError("Errore di autenticazione con il servizio parametri.")
+
+    headers = {'Authorization': f'Bearer {token}'}
+
+    try:
+        detail_resp = requests.get(
+            f'{base}/plant/detail/{pid}/',
+            headers=headers,
+            timeout=15,
+        )
+
+    except requests.exceptions.Timeout:
+        logger.error("Timeout durante il dettaglio Open Plantbook")
+        raise ValueError("Il servizio parametri ha impiegato troppo tempo a rispondere. Riprova.")
+    
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Errore di rete Open Plantbook (detail): {e}")
+        raise ValueError("Impossibile recuperare i parametri della pianta. Riprova più tardi.")
+
+    if detail_resp.status_code == 404:
+        logger.warning(f"Open Plantbook: specie '{species_name}' non trovata")
+        raise ValueError(f"Specie '{species_name}' non trovata nel database. Puoi riprovare con un'altra foto o inserire i parametri manualmente.")
+    
+    if detail_resp.status_code == 429:
+        logger.warning("Limite di richieste Open Plantbook raggiunto")
+        raise ValueError("Limite di richieste raggiunto per il servizio parametri. Riprova tra qualche minuto.")
+    
+    if detail_resp.status_code not in (200, 201):
+        logger.error(f"Open Plantbook detail errore {detail_resp.status_code}: {detail_resp.text}")
+        raise ValueError(f"Errore nel recupero dei parametri ({detail_resp.status_code}).")
+
+    d = detail_resp.json()
+
+    # Temperatura
+    temp_min = round(d['min_temp']) if d.get('min_temp') is not None else 15
+    temp_max = round(d['max_temp']) if d.get('max_temp') is not None else 35
+
+    # Umidità aria
+    humidity_min = round(d['min_env_humid']) if d.get('min_env_humid') is not None else 40
+    humidity_max = round(d['max_env_humid']) if d.get('max_env_humid') is not None else 60
+
+    # Umidità suolo
+    soil_min = round(d['min_soil_moist']) if d.get('min_soil_moist') is not None else 30
+    soil_max = round(d['max_soil_moist']) if d.get('max_soil_moist') is not None else 60
+
+    # Luce
+    lux_max = d.get('max_light_lux') or 0
+
+    if lux_max > 50000:   
+        sunlight = 'full sun'
+    elif lux_max > 10000: 
+        sunlight = 'part shade'
+    else:                 
+        sunlight = 'full shade'
+
+    # Irrigazione derivata da soil_max
+    if soil_max >= 70:   
+        watering = 'frequent'
+    elif soil_max >= 50: 
+        watering = 'average'
+    elif soil_max >= 30: 
+        watering = 'minimum'
+    else:                
+        watering = 'none'
+
+    care = {
+        'temp_min': temp_min,
+        'temp_max': temp_max,
+        'humidity_min': humidity_min,
+        'humidity_max': humidity_max,
+        'soil_min': soil_min,
+        'soil_max': soil_max,
+        'sunlight': sunlight,
+        'watering': watering,
+    }
+
+    # Salva in cache per uso futuro
+    PlantCareCache.objects.create(pid=pid, **care)
+    logger.info(f"Parametri salvati in cache per '{pid}'")
+
+    return care
