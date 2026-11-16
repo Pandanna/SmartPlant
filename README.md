@@ -73,15 +73,23 @@ What sets it apart is the setup: you do not enter thresholds by hand. You upload
 ## How It Works
 
 ```mermaid
-flowchart LR
-    ESP["ESP32 device<br/>sensors + pump"] -- "readings (MQTT over TLS)" --> AWS[("AWS IoT Core")]
-    AWS -- "irrigation and config" --> ESP
-    AWS <--> DJ["Django web app"]
-    DJ <--> DB[("PostgreSQL")]
-    DJ -- "photo" --> PID["Plant.id"]
-    DJ -- "species" --> OPB["Open Plantbook"]
-    DJ -- "alerts" --> TG["Telegram"]
-    USER(["User"]) <--> DJ
+flowchart TD
+    USER(["User<br/>web browser"])
+    ESP["ESP32 device<br/>sensors + water pump"]
+    AWS[("AWS IoT Core<br/>MQTT over TLS")]
+    DJ["Django web app"]
+    DB[("PostgreSQL")]
+    PID["Plant.id<br/>species from a photo"]
+    OPB["Open Plantbook<br/>care parameters"]
+    TG["Telegram<br/>alerts"]
+
+    ESP <--> AWS
+    AWS <--> DJ
+    USER <--> DJ
+    DJ <--> DB
+    DJ --> PID
+    DJ --> OPB
+    DJ --> TG
 ```
 
 1. The device reads its sensors once an hour and publishes each value on `smartplant/<device_id>/<sensor>`.
@@ -189,4 +197,3 @@ The project includes 92 automated tests covering authentication, the dashboard, 
 cd SmartPlantManager
 python manage.py test --settings=SmartPlantManager.settings_test
 ```
-
