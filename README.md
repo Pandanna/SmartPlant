@@ -190,8 +190,3 @@ cd SmartPlantManager
 python manage.py test --settings=SmartPlantManager.settings_test
 ```
 
----
-
-## Author
-
-**Anna Chiara Mameli** · [github.com/Pandanna](https://github.com/Pandanna)
